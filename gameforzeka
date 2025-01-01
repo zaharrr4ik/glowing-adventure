@@ -1,1 +1,27 @@
+    def show_exit_menu(self):
+        exit_menu = True
+        while exit_menu:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_y: #This remains for testing purposes
+                        pygame.quit()
+                        quit()
+                    if event.key == pygame.K_n: #This remains for testing purposes
+                        exit_menu = False
 
+            self.screen.fill(BLACK)
+            menu_width = self.width // 4
+            menu_height = self.height // 4
+            menu_x = (self.width - menu_width) // 2
+            menu_y = (self.height - menu_height) // 2
+            pygame.draw.rect(self.screen, GRAY, (menu_x, menu_y, menu_width, menu_height))
+
+            font_size = int(menu_height / 10) # font size is 1/10th of menu height
+            draw_pixel_text(self.screen, "¿Выйти из игры?", font_size*2, menu_x + menu_width//2 - 100, menu_y + menu_height//4, WHITE)
+            draw_pixel_text(self.screen, "Да", font_size, menu_x + menu_width//4, menu_y + 3*menu_height//4, WHITE)
+            draw_pixel_text(self.screen, "Нет", font_size, menu_x + 3*menu_width//4 - 50, menu_y + 3*menu_height//4, WHITE) #Adjusted x position for better centering
+
+            pygame.display.flip()
