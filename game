@@ -32,9 +32,9 @@ def draw_pixel_text(surface, text, font_size, x, y, color):
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, (x, y))
 
-def input_box(screen, message):
+def input_box(screen, message, width, height, stars):
     font = pygame.font.Font(None, 36)
-    input_rect = pygame.Rect(100, 100, 600, 50)
+    input_rect = pygame.Rect( (width - 600) // 2, (height - 50) // 2, 600, 50) # Центрируем прямоугольник
     color_active = pygame.Color('lightskyblue3')
     color_passive = pygame.Color('chartreuse4')
     color = color_passive
@@ -60,8 +60,14 @@ def input_box(screen, message):
                     else:
                         text += event.unicode
 
-        screen.fill(BLACK)
-        draw_pixel_text(screen, message, 48, 100, 50, WHITE)
+        screen.fill(BLACK)  # Заливаем экран черным
+
+        # Рисуем звезды
+        for star in stars:
+            pygame.draw.circle(screen, WHITE, (star[0], star[1]), star[2])
+
+        draw_pixel_text(screen, message, 48, input_rect.centerx - 200, input_rect.top - 50, WHITE)  # надпись над полем ввода
+
         if active:
             color = color_active
         else:
@@ -71,6 +77,7 @@ def input_box(screen, message):
         screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 5))
         pygame.display.flip()
     return text
+
 
 class MainScreen:
     def __init__(self, width, height):
@@ -140,8 +147,20 @@ class MainScreen:
                             char.rect.topleft = (x_offset, self.height // 2 - 100)
                             if char.rect.collidepoint(event.pos):
                                 self.selected_character = char
-                                self.player_name = input_box(self.screen, "Введите имя персонажа:")
+                                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
                                 return
+
+            self.screen.fill(BLACK)
+            for star in self.stars:
+                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+            for i, char in enumerate(characters):
+                if self.character_images[i]:
+                    char_rect_width = self.character_images[i].get_width()
+                    total_width = sum(self.character_images[j].get_width() for j in range(len(characters)) if self.character_images[j]) + 50 * (len(characters) - 1)
+                    x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
+                    char.rect.topleft = (x_offset, self.height // 2 - 100)
+                    self.screen.blit(char.image, char.rect)
+            pygame.display.flip()
 
             self.screen.fill(BLACK)
             for star in self.stars:
