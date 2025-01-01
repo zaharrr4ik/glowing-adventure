@@ -9,7 +9,6 @@ FPS = 60
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (50, 50, 50)
-
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 
 class Character:
@@ -60,6 +59,7 @@ def input_box(screen, message):
                         text = text[:-1]
                     else:
                         text += event.unicode
+
         screen.fill(BLACK)
         draw_pixel_text(screen, message, 48, 100, 50, WHITE)
         if active:
@@ -72,18 +72,16 @@ def input_box(screen, message):
         pygame.display.flip()
     return text
 
-
 class MainScreen:
     def __init__(self, width, height):
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((self.width, self.height), pygame.FULLSCREEN)
         self.stars = []
-        self.generate_stars(200) # Больше звезд для фона
+        self.generate_stars(200)
         self.load_images()
         self.player_name = ""
         self.selected_character = None
-
 
     def generate_stars(self, num_stars):
         for _ in range(num_stars):
@@ -96,8 +94,7 @@ class MainScreen:
         self.screen.fill(BLACK)
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-        draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width//2 - 200, 100, WHITE) # Центрирование названия
-
+        draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width//2 - 200, 100, WHITE)
         if self.selected_character:
             draw_pixel_text(self.screen, f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}", 48, self.width // 2 - 200, self.height // 2 + 100, WHITE)
 
@@ -106,6 +103,7 @@ class MainScreen:
         for char_data in characters:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
+                image = pygame.transform.scale(image, (image.get_width() // 2, image.get_height() // 2))
                 self.character_images.append(image)
                 char_data.image = image
                 char_data.rect = image.get_rect()
@@ -122,7 +120,8 @@ class MainScreen:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE and self.selected_character is None:
                         self.choose_character()
-
+                    if event.key == pygame.K_ESCAPE:
+                        self.show_exit_menu()
             self.draw()
             pygame.display.flip()
 
@@ -135,7 +134,10 @@ class MainScreen:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, char in enumerate(characters):
                         if self.character_images[i]:
-                            char.rect.center = (self.width // 2 + i * (char.rect.width + 50) - (len(characters) -1) * (char.rect.width + 50) // 2, self.height // 2 - 100) # Расстояние между персонажами
+                            char_rect_width = self.character_images[i].get_width()
+                            total_width = sum(self.character_images[j].get_width() for j in range(len(characters)) if self.character_images[j]) + 50 * (len(characters) - 1)
+                            x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
+                            char.rect.topleft = (x_offset, self.height // 2 - 100)
                             if char.rect.collidepoint(event.pos):
                                 self.selected_character = char
                                 self.player_name = input_box(self.screen, "Введите имя персонажа:")
@@ -144,20 +146,36 @@ class MainScreen:
             self.screen.fill(BLACK)
             for star in self.stars:
                 pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-
             for i, char in enumerate(characters):
                 if self.character_images[i]:
-                    char.rect.center = (self.width // 2 + i * (char.rect.width + 50) - (len(characters) -1) * (char.rect.width + 50) // 2, self.height // 2 - 100)
+                    char_rect_width = self.character_images[i].get_width()
+                    total_width = sum(self.character_images[j].get_width() for j in range(len(characters)) if self.character_images[j]) + 50 * (len(characters) - 1)
+                    x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
+                    char.rect.topleft = (x_offset, self.height // 2 - 100)
                     self.screen.blit(char.image, char.rect)
-
             pygame.display.flip()
 
+    def show_exit_menu(self):
+        exit_menu = True
+        while exit_menu:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_y:
+                        pygame.quit()
+                        quit()
+                    if event.key == pygame.K_n:
+                        exit_menu = False
+            self.screen.fill(BLACK)
+            draw_pixel_text(self.screen, "¿Выйти из игры?", 50, self.width // 2 - 100, self.height // 2 - 50, WHITE)
+            draw_pixel_text(self.screen, "(y/n)", 30, self.width // 2 - 30, self.height // 2, WHITE)
+            pygame.display.flip()
 
 
 # Создание главного экрана и запуск игры
 infoObject = pygame.display.Info()
 mainscreen = MainScreen(infoObject.current_w, infoObject.current_h)
-
 mainscreen.run()
-
 pygame.quit()
