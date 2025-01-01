@@ -5,12 +5,25 @@
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     quit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_y: #This remains for testing purposes
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    menu_width = self.width // 4
+                    menu_height = self.height // 4
+                    menu_x = (self.width - menu_width) // 2
+                    menu_y = (self.height - menu_height) // 2
+                    font_size = int(menu_height / 10)
+
+                    # Check for clicks on "Да" and "Нет" buttons
+                    yes_rect = pygame.Rect(menu_x + menu_width // 4, menu_y + 3 * menu_height // 4 - font_size,
+                                           font_size * 3, font_size) # approximate button size
+                    no_rect = pygame.Rect(menu_x + 3 * menu_width // 4 - font_size * 4, menu_y + 3 * menu_height // 4 - font_size,
+                                          font_size * 4, font_size)
+
+                    if yes_rect.collidepoint(event.pos):
                         pygame.quit()
                         quit()
-                    if event.key == pygame.K_n: #This remains for testing purposes
+                    elif no_rect.collidepoint(event.pos):
                         exit_menu = False
+
 
             self.screen.fill(BLACK)
             menu_width = self.width // 4
@@ -19,9 +32,11 @@
             menu_y = (self.height - menu_height) // 2
             pygame.draw.rect(self.screen, GRAY, (menu_x, menu_y, menu_width, menu_height))
 
-            font_size = int(menu_height / 10) # font size is 1/10th of menu height
-            draw_pixel_text(self.screen, "¿Выйти из игры?", font_size*2, menu_x + menu_width//2 - 100, menu_y + menu_height//4, WHITE)
-            draw_pixel_text(self.screen, "Да", font_size, menu_x + menu_width//4, menu_y + 3*menu_height//4, WHITE)
-            draw_pixel_text(self.screen, "Нет", font_size, menu_x + 3*menu_width//4 - 50, menu_y + 3*menu_height//4, WHITE) #Adjusted x position for better centering
+            font_size = int(menu_height / 10)  # font size is 1/10th of menu height
+            draw_pixel_text(self.screen, "¿Выйти из игры?", font_size * 2, menu_x + menu_width // 2 - 100,
+                            menu_y + menu_height // 4, WHITE)
+            draw_pixel_text(self.screen, "Да", font_size, menu_x + menu_width // 4, menu_y + 3 * menu_height // 4, WHITE)
+            draw_pixel_text(self.screen, "Нет", font_size, menu_x + 3 * menu_width // 4 - 50,
+                            menu_y + 3 * menu_height // 4, WHITE)  # Adjusted x position for better centering
 
             pygame.display.flip()
