@@ -282,4 +282,3 @@ mainscreen = MainScreen(infoObject.current_w, infoObject.current_h)
 mainscreen.run()
 pygame.quit()
 sys.exit()
-
