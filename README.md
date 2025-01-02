@@ -8,3 +8,4 @@
 ![human_bright](https://github.com/user-attachments/assets/a9d53534-898b-4fbc-b3a5-0079036eaa66)
 ![slime_bright](https://github.com/user-attachments/assets/a6790e78-a2cf-4654-bef9-5f7d64656c73)
 ![setting](https://github.com/user-attachments/assets/155c2acb-1a6e-44ad-919b-2806f0ea1fbf)
+![star](https://github.com/user-attachments/assets/fb161a15-87c3-4452-a791-26973867f174)
