@@ -17,25 +17,32 @@ data_dir = os.path.join(os.path.dirname(__file__), "data")
 # Выбранный шрифт
 GAME_FONT = "comicsansms"
 
+
 class Character:
-    def __init__(self, name, image_name, speed):
+    def __init__(self, name, image_name, bright_image_name, speed):  # Added bright_image_name
         self.name = name
         self.image_name = image_name
+        self.bright_image_name = bright_image_name  # Added this line
         self.speed = speed
         self.image = None
+        self.bright_image = None
         self.rect = None
+        self.highlighted = False
 
 characters = [
-    Character("Человек", "human.png", 5),
-    Character("Слизь", "slime.png", 2),
-    Character("Хомяк", "hamster.png", 3),
+    Character("Человек", "human.png", "human_bright.png", 5),
+    Character("Слизь", "slime.png", "slime_bright.png", 2),
+    Character("Хомяк", "hamster.png", "hamster_bright.png", 3),
 ]
+
+
 
 def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
     font = pygame.font.SysFont(font, font_size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(x, y))
-    blurred_surface = pygame.transform.scale(text_surface, (text_surface.get_width() * 2, text_surface.get_height() * 2))
+    blurred_surface = pygame.transform.scale(text_surface,
+                                             (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, text_rect)
 
@@ -82,6 +89,7 @@ def input_box(screen, message, width, height, stars):
         pygame.display.flip()
     return text
 
+
 class MainScreen:
     def __init__(self, width, height):
         self.width = width
@@ -92,7 +100,7 @@ class MainScreen:
         self.load_images()
         self.player_name = ""
         self.selected_character = None
-        self.font = pygame.font.SysFont(None, 64) #Шрифт для текста
+        self.font = pygame.font.SysFont(None, 64)  # Шрифт для текста
 
     def generate_stars(self, num_stars):
         for _ in range(num_stars):
@@ -107,19 +115,23 @@ class MainScreen:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
         draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width // 2, 100, WHITE, font=GAME_FONT)
         if self.selected_character:
-            draw_pixel_text(self.screen, f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}", 48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
+            draw_pixel_text(self.screen, f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
+                            48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
 
     def load_images(self):
         self.character_images = []
         for char_data in characters:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
+                bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
                 image = pygame.transform.scale(image, (image.get_width() // 2, image.get_height() // 2))
+                bright_image = pygame.transform.scale(bright_image, (bright_image.get_width() // 2, bright_image.get_height() // 2))
                 self.character_images.append(image)
                 char_data.image = image
+                char_data.bright_image = bright_image
                 char_data.rect = image.get_rect()
             except pygame.error as e:
-                print(f"Ошибка загрузки изображения {char_data.image_name}: {e}")
+                print(f"Error loading image {char_data.image_name}: {e}")
                 self.character_images.append(None)
 
     def show_story(self):
@@ -154,21 +166,27 @@ class MainScreen:
         y_offset = 100
         text_surfaces = [font.render(line, True, YELLOW) for line in story_text]
         y_positions = [y_offset + i * 70 for i in range(len(story_text))]
-
         scroll_speed = 2
-        all_lines_offscreen = False # Новый флаг
-
+        all_lines_offscreen = False
+        skip_story = False  # New variable
         running = True
         clock = pygame.time.Clock()
-        while running and not all_lines_offscreen: #Изменено условие цикла
+
+        while running and not all_lines_offscreen:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        skip_story = True  # Set skip_story to True if space is pressed
+                        break
+
+            if skip_story:  # Skip the story if skip_story is True
+                break
 
             self.screen.fill(BLACK)
             for star in self.stars:
                 pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-
             visible_text = []
             for i, text_surface in enumerate(text_surfaces):
                 y_positions[i] -= scroll_speed
@@ -176,13 +194,11 @@ class MainScreen:
                     text_rect = text_surface.get_rect(center=(self.width // 2, y_positions[i]))
                     self.screen.blit(text_surface, text_rect)
                     visible_text.append(text_surface)
-
-            #Проверка на завершение анимации
-            all_lines_offscreen = all(y_positions[i] + text_surfaces[i].get_height() <= 0 for i in range(len(text_surfaces)))
-
+            all_lines_offscreen = all(
+                y_positions[i] + text_surfaces[i].get_height() <= 0 for i in range(len(text_surfaces)))
             pygame.display.flip()
             clock.tick(30)
-            
+
     def run(self):
         draw_pixel_text(self.screen, "Сквозь Миры", 150, self.width // 2, self.height // 3, YELLOW, font=GAME_FONT)
         pygame.display.flip()
@@ -203,11 +219,14 @@ class MainScreen:
             pygame.display.flip()
 
     def choose_character(self):
-        while True:
+        selected_character = None
+        confirm_button_pressed = False
+
+        while not confirm_button_pressed:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    quit()
+                    sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, char in enumerate(characters):
                         if self.character_images[i]:
@@ -216,21 +235,44 @@ class MainScreen:
                             x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
                             char.rect.topleft = (x_offset, self.height // 2 - 100)
                             if char.rect.collidepoint(event.pos):
-                                self.selected_character = char
-                                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
-                                return
+                                selected_character = char  # Assign the selected character
+                                char.highlighted = True  # Highlight the selected character
+                                for other_char in characters: #Unhighlight other characters
+                                    if other_char != char:
+                                        other_char.highlighted = False
+                                break  # Exit inner loop after selecting a character
 
-            self.screen.fill(BLACK)
-            for star in self.stars:
-                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-            for i, char in enumerate(characters):
-                if self.character_images[i]:
-                    char_rect_width = self.character_images[i].get_width()
-                    total_width = sum(self.character_images[j].get_width() for j in range(len(characters)) if self.character_images[j]) + 50 * (len(characters) - 1)
-                    x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
-                    char.rect.topleft = (x_offset, self.height // 2 - 100)
-                    self.screen.blit(char.image, char.rect)
-            pygame.display.flip()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150, 300, 80)
+                    if button_rect.collidepoint(event.pos) and selected_character:
+                        confirm_button_pressed = True
+
+            self.draw_choose_character_screen(selected_character)
+            if confirm_button_pressed and selected_character:
+                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
+
+        return selected_character
+
+    def draw_choose_character_screen(self, selected_character):
+        self.screen.fill(BLACK)
+        for star in self.stars:
+            pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+        for i, char in enumerate(characters):
+            if self.character_images[i]:
+                char_rect_width = self.character_images[i].get_width()
+                total_width = sum(self.character_images[j].get_width() for j in range(len(characters)) if self.character_images[j]) + 50 * (len(characters) - 1)
+                x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
+                char.rect.topleft = (x_offset, self.height // 2 - 100)
+                #Removed rectangular outline
+                self.screen.blit(char.bright_image if char.highlighted else char.image, char.rect)
+        # Draw confirm button
+        button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150, 300, 80)
+        pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
+        font = pygame.font.SysFont(None, 48)
+        text = font.render("Подтвердить", True, WHITE)
+        text_rect = text.get_rect(center=button_rect.center)
+        self.screen.blit(text, text_rect)
+        pygame.display.flip()
 
     def show_exit_menu(self):
         font_title = pygame.font.SysFont(GAME_FONT, 100)
@@ -239,8 +281,11 @@ class MainScreen:
         button_height = 120
         button_spacing = 80
 
-        button1_rect = pygame.Rect((self.width - button_width) // 2, (self.height // 2) - button_height - button_spacing // 2, button_width, button_height)
-        button2_rect = pygame.Rect((self.width - button_width) // 2, (self.height // 2) + button_spacing // 2, button_width, button_height)
+        button1_rect = pygame.Rect((self.width - button_width) // 2,
+                                   (self.height // 2) - button_height - button_spacing // 2, button_width,
+                                   button_height)
+        button2_rect = pygame.Rect((self.width - button_width) // 2, (self.height // 2) + button_spacing // 2,
+                                   button_width, button_height)
 
         exit_menu = True
         while exit_menu:
