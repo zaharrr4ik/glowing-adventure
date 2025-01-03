@@ -17,6 +17,7 @@ RED = (255, 0, 0)
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
 GAME_FONT = "comicsansms"
+# Removed fixed CHARACTER_SIZE
 
 class Character:
     def __init__(self, name, image_name, bright_image_name, speed):
@@ -43,6 +44,7 @@ def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
                                              (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, text_rect)
+
 
 def input_box(screen, message, width, height, stars):
     font = pygame.font.Font(None, 36)
@@ -126,6 +128,9 @@ class MainScreen:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
                 bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
+                #Improved scaling calculation.
+                image = self.scale_image(image, 0.6) # Adjust scaling factor as needed
+                bright_image = self.scale_image(bright_image, 0.6) # Adjust scaling factor as needed
                 self.character_images.append(image)
                 char_data.image = image
                 char_data.bright_image = bright_image
@@ -133,6 +138,12 @@ class MainScreen:
             except pygame.error as e:
                 print(f"Error loading image {char_data.image_name}: {e}")
                 self.character_images.append(None)
+
+    def scale_image(self, image, scale_factor):
+        # Scale the image by the specified scale factor
+        new_width = int(image.get_width() * scale_factor)
+        new_height = int(image.get_height() * scale_factor)
+        return pygame.transform.scale(image, (new_width, new_height))
 
     def show_story(self):
         story_text = [
@@ -287,20 +298,14 @@ class MainScreen:
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, char in enumerate(characters):
-                        if self.character_images[i]:
-                            # Calculate the position of each character image
-                            image_width = self.character_images[i].get_width()
-                            x_pos = (self.width - (len(characters) * image_width + (len(characters) - 1) * 25)) // 2 + i * (image_width + 25)
-                            y_pos = self.height // 2 - self.character_images[i].get_height() // 2 - 50
-                            char.rect = pygame.Rect(x_pos, y_pos, image_width, self.character_images[i].get_height())
-                            if char.rect.collidepoint(event.pos):
-                                selected_character = char
-                                char.highlighted = True
-                                for other_char in characters:
-                                    if other_char != char:
-                                        other_char.highlighted = False
-                                break
-
+                        if self.character_images[i] and char.rect and char.rect.collidepoint(event.pos):
+                            selected_character = char
+                            char.highlighted = True
+                            for other_char in characters:
+                                if other_char != char:
+                                    other_char.highlighted = False
+                            break
+                # Separate confirm button handling
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
                     if button_rect.collidepoint(event.pos) and selected_character:
@@ -308,29 +313,30 @@ class MainScreen:
 
             self.draw_choose_character_screen(selected_character)
             if confirm_button_pressed and selected_character:
-                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height,
-                                             self.stars)
+                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
                 self.selected_character = selected_character
                 self.show_character_intro(selected_character)
         return selected_character
 
-    def draw_choose_character_screen(self, selected_character):
+
+    def draw_choose_character_screen(self, selected_character=None):
         self.screen.fill(BLACK)
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
         if self.character_images:
-            image_width = self.character_images[0].get_width()
-            x_offset = (self.width - (len(characters) * image_width + (len(characters) - 1) * 25)) // 2
+            spacing = 25
+            total_width = sum(img.get_width() for img in self.character_images) + (len(characters) - 1) * spacing
+            x_offset = (self.width - total_width) // 2
+            #Corrected Y position calculation
+            max_height = max(img.get_height() for img in self.character_images)
+            y_pos = self.height // 2 - max_height // 2
 
             for i, char in enumerate(characters):
                 if self.character_images[i]:
-                    char_height = self.character_images[i].get_height()
-                    x_pos = x_offset + i * (image_width + 25)
-                    y_pos = self.height // 2 - char_height // 2 - 50
-                    char.rect = pygame.Rect(x_pos, y_pos, image_width, char_height)
+                    x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
+                    char.rect = pygame.Rect(x_pos, y_pos, self.character_images[i].get_width(), self.character_images[i].get_height())
                     self.screen.blit(char.bright_image if char.highlighted else char.image, char.rect)
-
 
         button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
         pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
