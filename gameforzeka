@@ -5,6 +5,7 @@ import sys
 import time
 
 pygame.init()
+pygame.mixer.init() # Initialize mixer for sound
 
 # Constants
 FPS = 60
@@ -14,6 +15,7 @@ GRAY = (50, 50, 50)
 YELLOW = (255, 255, 0)  # Yellow for narration
 RED = (255, 0, 0)  # Red color
 data_dir = os.path.join(os.path.dirname(__file__), "data")
+sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
 
 # Selected font
 GAME_FONT = "comicsansms"
@@ -103,6 +105,7 @@ class MainScreen:
         self.selected_character = None
         self.font = pygame.font.SysFont(None, 64)  # Font for text
         self.buttons = []
+        self.load_sounds() #Load sounds here
 
     def generate_stars(self, num_stars):
         for _ in range(num_stars):
@@ -117,18 +120,21 @@ class MainScreen:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
         draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width // 2, 100, WHITE, font=GAME_FONT)
         if self.selected_character:
-            draw_pixel_text(self.screen, f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
-                            48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
+            draw_pixel_text(self.screen,
+                             f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
+                             48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
 
     def load_images(self):
         self.character_images = []
         for char_data in characters:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
-                bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
+                bright_image = pygame.image.load(
+                    os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
                 image = pygame.transform.scale(image, (image.get_width() // 2, image.get_height() // 2))
                 bright_image = pygame.transform.scale(bright_image,
-                                                      (bright_image.get_width() // 2, bright_image.get_height() // 2))
+                                                      (bright_image.get_width() // 2,
+                                                       bright_image.get_height() // 2))
                 self.character_images.append(image)
                 char_data.image = image
                 char_data.bright_image = bright_image
@@ -203,7 +209,8 @@ class MainScreen:
             clock.tick(30)
 
     def run(self):
-        draw_pixel_text(self.screen, "Сквозь Миры", 150, self.width // 2, self.height // 3, YELLOW, font=GAME_FONT)
+        draw_pixel_text(self.screen, "Сквозь Миры", 150, self.width // 2, self.height // 3, YELLOW,
+                        font=GAME_FONT)
         pygame.display.flip()
         time.sleep(3)
         self.screen.fill(BLACK)
@@ -222,43 +229,64 @@ class MainScreen:
             self.show_menu_screen()
             pygame.display.flip()
 
-        def show_menu_screen(self):
+    def show_menu_screen(self):
         running = True
         while running:
-            self.screen.fill(BLACK)
-            for star in self.stars:
-                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+            self.draw_menu_screen()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    for i, rect in enumerate(self.buttons):
+                        if rect.collidepoint(event.pos):
+                            if self.click_sound:
+                                self.click_sound.play()
+                            if i == 0:  # "Начать новую игру" button
+                                self.choose_character()
+                            elif i == 3:
+                                self.show_settings_menu()
+                            elif i == 4:  # Exit button
+                                self.show_exit_menu()
+                            else:
+                                print(f"Button {i + 1} clicked")  # Placeholder
 
-            # Title "Сквозь Миры" - Adjusted y-position
-            title_font = pygame.font.SysFont(GAME_FONT, 150)
-            title_text = title_font.render("Сквозь Миры", True, (192, 192, 192))
-            title_rect = title_text.get_rect(center=(self.width // 2, self.height // 8))  # Moved higher
-            self.screen.blit(title_text, title_rect)
+    def draw_menu_screen(self):
+        self.screen.fill(BLACK)
+        for star in self.stars:
+            pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
-            # Menu title "Меню"
-            menu_font = pygame.font.SysFont(GAME_FONT, 100)
-            menu_text = menu_font.render("Меню", True, WHITE)
-            menu_rect = menu_text.get_rect(center=(self.width // 2, self.height // 4))
-            self.screen.blit(menu_text, menu_rect)
+        # Title "Сквозь Миры" - Adjusted y-position
+        title_font = pygame.font.SysFont(GAME_FONT, 150)
+        title_text = title_font.render("Сквозь Миры", True, (192, 192, 192))  # Silver color
+        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 8))  # Moved higher
+        self.screen.blit(title_text, title_rect)
 
-            button_width = self.width // 5
-            button_height = 50
-            button_x = self.width // 2 - button_width // 2
-            button_y_spacing = 20
-            button_texts = ["Начать новую игру", "Продолжить игру", "Загрузить игру", "Настройки", "Выйти"]
-            self.buttons = []
+        # Menu title "Меню"
+        menu_font = pygame.font.SysFont(GAME_FONT, 100)
+        menu_text = menu_font.render("Меню", True, WHITE)  # Changed to white
+        menu_rect = menu_text.get_rect(center=(self.width // 2, self.height // 4))
+        self.screen.blit(menu_text, menu_rect)
 
-            for i, text in enumerate(button_texts):
-                button_y = menu_rect.bottom + 50 + i * (button_height + button_y_spacing)
-                button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-                pygame.draw.rect(self.screen, GRAY, button_rect)
-                button_font = pygame.font.SysFont(GAME_FONT, 30)
-                button_text = button_font.render(text, True, WHITE)
-                button_text_rect = button_text.get_rect(center=button_rect.center)
-                self.screen.blit(button_text, button_text_rect)
-                self.buttons.append(button_rect)
+        button_width = self.width // 5
+        button_height = 50
+        button_x = self.width // 2 - button_width // 2
+        button_y_spacing = 20
+        button_texts = ["Начать новую игру", "Продолжить игру", "Загрузить игру", "Настройки", "Выйти"]
+        self.buttons = []  # Clear the button list
 
-            pygame.display.flip()
+        for i, text in enumerate(button_texts):
+            button_y = menu_rect.bottom + 50 + i * (button_height + button_y_spacing)
+            button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+            pygame.draw.rect(self.screen, GRAY, button_rect)
+            button_font = pygame.font.SysFont(GAME_FONT, 30)  # Smaller font for buttons
+            button_text = button_font.render(text, True, WHITE)
+            button_text_rect = button_text.get_rect(center=button_rect.center)
+            self.screen.blit(button_text, button_text_rect)
+            self.buttons.append(button_rect)
+
+        pygame.display.flip()
 
     def choose_character(self):
         selected_character = None
@@ -273,8 +301,9 @@ class MainScreen:
                     for i, char in enumerate(characters):
                         if self.character_images[i]:
                             char_rect_width = self.character_images[i].get_width()
-                            total_width = sum(self.character_images[j].get_width() for j in range(len(characters)) if
-                                              self.character_images[j]) + 50 * (len(characters) - 1)
+                            total_width = sum(self.character_images[j].get_width() for j in
+                                              range(len(characters)) if self.character_images[j]) + 50 * (
+                                                  len(characters) - 1)
                             x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
                             char.rect.topleft = (x_offset, self.height // 2 - 100)
                             if char.rect.collidepoint(event.pos):
@@ -292,8 +321,9 @@ class MainScreen:
 
             self.draw_choose_character_screen(selected_character)
             if confirm_button_pressed and selected_character:
-                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
-
+                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height,
+                                             self.stars)
+                self.selected_character = selected_character  # Set selected character in MainScreen
         return selected_character
 
     def draw_choose_character_screen(self, selected_character):
@@ -303,13 +333,14 @@ class MainScreen:
         for i, char in enumerate(characters):
             if self.character_images[i]:
                 char_rect_width = self.character_images[i].get_width()
-                total_width = sum(self.character_images[j].get_width() for j in range(len(characters)) if
-                                  self.character_images[j]) + 50 * (len(characters) - 1)
+                total_width = sum(self.character_images[j].get_width() for j in
+                                  range(len(characters)) if self.character_images[j]) + 50 * (
+                                      len(characters) - 1)
                 x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
                 char.rect.topleft = (x_offset, self.height // 2 - 100)
                 # Removed rectangular outline
                 self.screen.blit(char.bright_image if char.highlighted else char.image, char.rect)
-        # Draw confirm button
+                # Draw confirm button
         button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150, 300, 80)
         pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
         font = pygame.font.SysFont(None, 48)
@@ -367,49 +398,57 @@ class MainScreen:
     def show_settings_menu(self):
         running = True
         while running:
-            self.screen.fill(BLACK)
-            for star in self.stars:
-                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-            title_font = pygame.font.SysFont(GAME_FONT, 100)
-            title_text = title_font.render("Настройки", True, RED)
-            title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
-            self.screen.blit(title_text, title_rect)
-
-            button_width = self.width // 5
-            button_height = 60
-            button_x = self.width // 2 - button_width // 2
-            button_y_spacing = 30
-            button_texts = ["Назад", "Применить"]
-            self.settings_buttons = []
-
-            for i, text in enumerate(button_texts):
-                button_y = title_rect.bottom + 50 + i * (button_height + button_y_spacing)
-                button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-                pygame.draw.rect(self.screen, GRAY, button_rect)
-                button_font = pygame.font.SysFont(GAME_FONT, 30)
-                button_text = button_font.render(text, True, WHITE)
-                button_text_rect = button_text.get_rect(center=button_rect.center)
-                self.screen.blit(button_text, button_text_rect)
-                self.settings_buttons.append(button_rect)
-
-            pygame.display.flip()
-
+            self.draw_settings_menu()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                    pygame.quit()
-                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(self.settings_buttons):
                         if rect.collidepoint(event.pos):
+                            if self.click_sound:
+                                self.click_sound.play()
                             if i == 0:  # Back button
                                 running = False
                             elif i == 1:  # Apply button
                                 pass  # Add your apply logic here
 
-        # Создание главного экрана и запуск игры
+    def draw_settings_menu(self):
+        self.screen.fill(BLACK)
+        for star in self.stars:
+            pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+        title_font = pygame.font.SysFont(GAME_FONT, 100)
+        title_text = title_font.render("Настройки", True, RED)
+        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
+        self.screen.blit(title_text, title_rect)
+
+        button_width = self.width // 5
+        button_height = 60
+        button_x = self.width // 2 - button_width // 2
+        button_y_spacing = 30
+        button_texts = ["Назад", "Применить"]
+        self.settings_buttons = []
+
+        for i, text in enumerate(button_texts):
+            button_y = title_rect.bottom + 50 + i * (button_height + button_y_spacing)
+            button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+            pygame.draw.rect(self.screen, GRAY, button_rect)
+            button_font = pygame.font.SysFont(GAME_FONT, 30)
+            button_text = button_font.render(text, True, WHITE)
+            button_text_rect = button_text.get_rect(center=button_rect.center)
+            self.screen.blit(button_text, button_text_rect)
+            self.settings_buttons.append(button_rect)
+
+        pygame.display.flip()
+
+    def load_sounds(self):
+        try:
+            self.click_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "button_click.wav"))
+        except pygame.error as e:
+            print(f"Error loading sound file: {e}")
+            self.click_sound = None
 
 
+# Создание главного экрана и запуск игры
 infoObject = pygame.display.Info()
 mainscreen = MainScreen(infoObject.current_w, infoObject.current_h)
 mainscreen.run()
