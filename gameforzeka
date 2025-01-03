@@ -233,8 +233,13 @@ class MainScreen:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(self.buttons):
                         if rect.collidepoint(event.pos):
-                            # Add your button handling logic here
-                            print(f"Button {i + 1} clicked")  # Placeholder
+                            if i == 0:  # "Начать новую игру" button
+                                self.choose_character()
+                            elif i == 4:  # Exit button
+                                self.show_exit_menu()
+                            else:
+                                print(f"Button {i + 1} clicked")  # Placeholder
+
 
     def draw_menu_screen(self):
         self.screen.fill(BLACK)
