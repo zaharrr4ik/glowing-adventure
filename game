@@ -432,7 +432,7 @@ class MainScreen:
         self.settings_buttons = []
 
         try:
-            volume_icon = pygame.image.load(os.path.join(data_dir, "volume_icon.png")).convert_alpha()
+            volume_icon = pygame.image.load(os.path.join(data_dir, "volume.png")).convert_alpha()
             volume_icon = pygame.transform.scale(volume_icon, (40, 40))  # Adjust size as needed
         except pygame.error as e:
             print(f"Error loading volume icon: {e}")
