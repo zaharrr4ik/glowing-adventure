@@ -5,40 +5,35 @@ import sys
 import time
 
 pygame.init()
-pygame.mixer.init() # Initialize mixer for sound
+pygame.mixer.init()
 
 # Constants
 FPS = 60
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (50, 50, 50)
-YELLOW = (255, 255, 0)  # Yellow for narration
-RED = (255, 0, 0)  # Red color
+YELLOW = (255, 255, 0)
+RED = (255, 0, 0)
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
-
-# Selected font
 GAME_FONT = "comicsansms"
 
-
 class Character:
-    def __init__(self, name, image_name, bright_image_name, speed):  # Added bright_image_name
+    def __init__(self, name, image_name, bright_image_name, speed):
         self.name = name
         self.image_name = image_name
-        self.bright_image_name = bright_image_name  # Added this line
+        self.bright_image_name = bright_image_name
         self.speed = speed
         self.image = None
         self.bright_image = None
         self.rect = None
         self.highlighted = False
 
-
 characters = [
     Character("Человек", "human.png", "human_bright.png", 5),
     Character("Слизь", "slime.png", "slime_bright.png", 2),
     Character("Хомяк", "hamster.png", "hamster_bright.png", 3),
 ]
-
 
 def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
     font = pygame.font.SysFont(font, font_size)
@@ -48,7 +43,6 @@ def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
                                              (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, text_rect)
-
 
 def input_box(screen, message, width, height, stars):
     font = pygame.font.Font(None, 36)
@@ -103,9 +97,11 @@ class MainScreen:
         self.load_images()
         self.player_name = ""
         self.selected_character = None
-        self.font = pygame.font.SysFont(None, 64)  # Font for text
+        self.font = pygame.font.SysFont(None, 64)
         self.buttons = []
-        self.load_sounds() #Load sounds here
+        self.volume = 0.5
+        self.dragging_slider = False
+        self.load_sounds()
 
     def generate_stars(self, num_stars):
         for _ in range(num_stars):
@@ -177,7 +173,7 @@ class MainScreen:
         y_positions = [y_offset + i * 70 for i in range(len(story_text))]
         scroll_speed = 2
         all_lines_offscreen = False
-        skip_story = False  # New variable
+        skip_story = False
         running = True
         clock = pygame.time.Clock()
 
@@ -187,10 +183,10 @@ class MainScreen:
                     running = False
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
-                        skip_story = True  # Set skip_story to True if space is pressed
+                        skip_story = True
                         break
 
-            if skip_story:  # Skip the story if skip_story is True
+            if skip_story:
                 break
 
             self.screen.fill(BLACK)
@@ -243,29 +239,27 @@ class MainScreen:
                         if rect.collidepoint(event.pos):
                             if self.click_sound:
                                 self.click_sound.play()
-                            if i == 0:  # "Начать новую игру" button
+                            if i == 0:
                                 self.choose_character()
                             elif i == 3:
                                 self.show_settings_menu()
-                            elif i == 4:  # Exit button
+                            elif i == 4:
                                 self.show_exit_menu()
                             else:
-                                print(f"Button {i + 1} clicked")  # Placeholder
+                                print(f"Button {i + 1} clicked")
 
     def draw_menu_screen(self):
         self.screen.fill(BLACK)
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
-        # Title "Сквозь Миры" - Adjusted y-position
         title_font = pygame.font.SysFont(GAME_FONT, 150)
-        title_text = title_font.render("Сквозь Миры", True, (192, 192, 192))  # Silver color
-        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 8))  # Moved higher
+        title_text = title_font.render("Сквозь Миры", True, (192, 192, 192))
+        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 8))
         self.screen.blit(title_text, title_rect)
 
-        # Menu title "Меню"
         menu_font = pygame.font.SysFont(GAME_FONT, 100)
-        menu_text = menu_font.render("Меню", True, WHITE)  # Changed to white
+        menu_text = menu_font.render("Меню", True, WHITE)
         menu_rect = menu_text.get_rect(center=(self.width // 2, self.height // 4))
         self.screen.blit(menu_text, menu_rect)
 
@@ -274,13 +268,13 @@ class MainScreen:
         button_x = self.width // 2 - button_width // 2
         button_y_spacing = 20
         button_texts = ["Начать новую игру", "Продолжить игру", "Загрузить игру", "Настройки", "Выйти"]
-        self.buttons = []  # Clear the button list
+        self.buttons = []
 
         for i, text in enumerate(button_texts):
             button_y = menu_rect.bottom + 50 + i * (button_height + button_y_spacing)
             button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
             pygame.draw.rect(self.screen, GRAY, button_rect)
-            button_font = pygame.font.SysFont(GAME_FONT, 30)  # Smaller font for buttons
+            button_font = pygame.font.SysFont(GAME_FONT, 30)
             button_text = button_font.render(text, True, WHITE)
             button_text_rect = button_text.get_rect(center=button_rect.center)
             self.screen.blit(button_text, button_text_rect)
@@ -307,12 +301,12 @@ class MainScreen:
                             x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
                             char.rect.topleft = (x_offset, self.height // 2 - 100)
                             if char.rect.collidepoint(event.pos):
-                                selected_character = char  # Assign the selected character
-                                char.highlighted = True  # Highlight the selected character
-                                for other_char in characters:  # Unhighlight other characters
+                                selected_character = char
+                                char.highlighted = True
+                                for other_char in characters:
                                     if other_char != char:
                                         other_char.highlighted = False
-                                break  # Exit inner loop after selecting a character
+                                break
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150, 300, 80)
@@ -323,7 +317,7 @@ class MainScreen:
             if confirm_button_pressed and selected_character:
                 self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height,
                                              self.stars)
-                self.selected_character = selected_character  # Set selected character in MainScreen
+                self.selected_character = selected_character
         return selected_character
 
     def draw_choose_character_screen(self, selected_character):
@@ -338,9 +332,8 @@ class MainScreen:
                                       len(characters) - 1)
                 x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
                 char.rect.topleft = (x_offset, self.height // 2 - 100)
-                # Removed rectangular outline
                 self.screen.blit(char.bright_image if char.highlighted else char.image, char.rect)
-                # Draw confirm button
+
         button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150, 300, 80)
         pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
         font = pygame.font.SysFont(None, 48)
@@ -402,15 +395,25 @@ class MainScreen:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.volume_slider_rect.collidepoint(event.pos):
+                        self.dragging_slider = True
+                        self.adjust_volume(event)
                     for i, rect in enumerate(self.settings_buttons):
                         if rect.collidepoint(event.pos):
                             if self.click_sound:
                                 self.click_sound.play()
-                            if i == 0:  # Back button
+                            if i == 0:
                                 running = False
-                            elif i == 1:  # Apply button
-                                pass  # Add your apply logic here
+                            elif i == 1:
+                                pass
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.dragging_slider = False
+                elif event.type == pygame.MOUSEMOTION and self.dragging_slider:
+                    self.adjust_volume(event)
+
 
     def draw_settings_menu(self):
         self.screen.fill(BLACK)
@@ -438,11 +441,33 @@ class MainScreen:
             self.screen.blit(button_text, button_text_rect)
             self.settings_buttons.append(button_rect)
 
+        # Volume slider - Larger and rounded
+        slider_width = 300
+        slider_height = 40
+        slider_x = self.width // 2 - slider_width // 2
+        slider_y = title_rect.bottom + 50 + 2 * (button_height + button_y_spacing) + 30
+
+        self.volume_slider_rect = pygame.Rect(slider_x, slider_y, slider_width, slider_height)
+        pygame.draw.rect(self.screen, GRAY, self.volume_slider_rect, border_radius=10)
+
+        thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
+        thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
+        pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
+
         pygame.display.flip()
+
+    def adjust_volume(self, event):
+        slider_width = self.volume_slider_rect.width
+        mouse_x = event.pos[0]
+        self.volume = max(0, min(1, (mouse_x - self.volume_slider_rect.left) / slider_width))
+        if self.click_sound:
+            self.click_sound.set_volume(self.volume)
+
 
     def load_sounds(self):
         try:
             self.click_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "button_click.wav"))
+            self.click_sound.set_volume(0.2)
         except pygame.error as e:
             print(f"Error loading sound file: {e}")
             self.click_sound = None
