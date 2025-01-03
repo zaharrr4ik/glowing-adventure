@@ -222,55 +222,43 @@ class MainScreen:
             self.show_menu_screen()
             pygame.display.flip()
 
-    def show_menu_screen(self):
+        def show_menu_screen(self):
         running = True
         while running:
-            self.draw_menu_screen()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    for i, rect in enumerate(self.buttons):
-                        if rect.collidepoint(event.pos):
-                            if i == 0:  # "Начать новую игру" button
-                                self.choose_character()
-                            elif i == 3:
-                                self.show_settings_menu()
-                            elif i == 4:  # Exit button
-                                self.show_exit_menu()
-                            else:
-                                print(f"Button {i + 1} clicked")  # Placeholder
+            self.screen.fill(BLACK)
+            for star in self.stars:
+                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
-    def draw_menu_screen(self):
-        self.screen.fill(BLACK)
-        for star in self.stars:
-            pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+            # Title "Сквозь Миры" - Adjusted y-position
+            title_font = pygame.font.SysFont(GAME_FONT, 150)
+            title_text = title_font.render("Сквозь Миры", True, (192, 192, 192))
+            title_rect = title_text.get_rect(center=(self.width // 2, self.height // 8))  # Moved higher
+            self.screen.blit(title_text, title_rect)
 
-        title_font = pygame.font.SysFont(GAME_FONT, 100)
-        title_text = title_font.render("Меню", True, RED)
-        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
-        self.screen.blit(title_text, title_rect)
+            # Menu title "Меню"
+            menu_font = pygame.font.SysFont(GAME_FONT, 100)
+            menu_text = menu_font.render("Меню", True, WHITE)
+            menu_rect = menu_text.get_rect(center=(self.width // 2, self.height // 4))
+            self.screen.blit(menu_text, menu_rect)
 
-        button_width = self.width // 5
-        button_height = 50
-        button_x = self.width // 2 - button_width // 2
-        button_y_spacing = 20
-        button_texts = ["Начать новую игру", "Продолжить игру", "Загрузить игру", "Настройки", "Выйти"]
-        self.buttons = []  # Clear the button list
+            button_width = self.width // 5
+            button_height = 50
+            button_x = self.width // 2 - button_width // 2
+            button_y_spacing = 20
+            button_texts = ["Начать новую игру", "Продолжить игру", "Загрузить игру", "Настройки", "Выйти"]
+            self.buttons = []
 
-        for i, text in enumerate(button_texts):
-            button_y = title_rect.bottom + 50 + i * (button_height + button_y_spacing)
-            button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-            pygame.draw.rect(self.screen, GRAY, button_rect)
-            button_font = pygame.font.SysFont(GAME_FONT, 30)  # Smaller font for buttons
-            button_text = button_font.render(text, True, WHITE)
-            button_text_rect = button_text.get_rect(center=button_rect.center)
-            self.screen.blit(button_text, button_text_rect)
-            self.buttons.append(button_rect)
+            for i, text in enumerate(button_texts):
+                button_y = menu_rect.bottom + 50 + i * (button_height + button_y_spacing)
+                button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+                pygame.draw.rect(self.screen, GRAY, button_rect)
+                button_font = pygame.font.SysFont(GAME_FONT, 30)
+                button_text = button_font.render(text, True, WHITE)
+                button_text_rect = button_text.get_rect(center=button_rect.center)
+                self.screen.blit(button_text, button_text_rect)
+                self.buttons.append(button_rect)
 
-        pygame.display.flip()
+            pygame.display.flip()
 
     def choose_character(self):
         selected_character = None
