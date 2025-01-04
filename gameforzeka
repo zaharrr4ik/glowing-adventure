@@ -392,8 +392,9 @@ class MainScreen:
 
             pygame.display.flip()
 
-    def show_settings_menu(self):
+        def show_settings_menu(self):
         running = True
+        self.dragging_slider = False  # Добавлена переменная для отслеживания перетаскивания
         while running:
             self.screen.fill(BLACK)
             for star in self.stars:
@@ -448,10 +449,23 @@ class MainScreen:
                             if i == 0:
                                 running = False
                             elif i == 1:
-                                pass
-                elif event.type == pygame.MOUSEBUTTONDOWN:
+                                pass  # Применение настроек (пока ничего не делаем)
                     if self.volume_slider_rect.collidepoint(event.pos):
+                        self.dragging_slider = True  # Начало перетаскивания
                         self.adjust_volume(event)
+                        thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
+                        thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
+                        pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
+                        pygame.display.flip()
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.dragging_slider = False  # Конец перетаскивания
+                elif event.type == pygame.MOUSEMOTION:
+                    if self.dragging_slider:
+                        self.adjust_volume(event)
+                        thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
+                        thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
+                        pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
+                        pygame.display.flip()
 
     def adjust_volume(self, event):
         slider_width = self.volume_slider_rect.width
