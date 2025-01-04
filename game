@@ -17,6 +17,7 @@ RED = (255, 0, 0)
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
 GAME_FONT = "comicsansms"
+# Removed fixed CHARACTER_SIZE
 
 class Character:
     def __init__(self, name, image_name, bright_image_name, speed):
@@ -30,9 +31,9 @@ class Character:
         self.highlighted = False
 
 characters = [
-    Character("Человек", "human.png", "human_bright.png", 5),
-    Character("Слизь", "slime.png", "slime_bright.png", 2),
-    Character("Хомяк", "hamster.png", "hamster_bright.png", 3),
+    Character("Немецкий медик", "german_medic.png", "german_medic_bright.png", 5),
+    Character("Военный Нигерии", "nigerian_soldier.png", "nigerian_soldier_bright.png", 2),
+    Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
 ]
 
 def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
@@ -43,6 +44,7 @@ def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
                                              (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, text_rect)
+
 
 def input_box(screen, message, width, height, stars):
     font = pygame.font.Font(None, 36)
@@ -125,12 +127,10 @@ class MainScreen:
         for char_data in characters:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
-                bright_image = pygame.image.load(
-                    os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
-                image = pygame.transform.scale(image, (image.get_width() // 2, image.get_height() // 2))
-                bright_image = pygame.transform.scale(bright_image,
-                                                      (bright_image.get_width() // 2,
-                                                       bright_image.get_height() // 2))
+                bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
+                #Improved scaling calculation.
+                image = self.scale_image(image, 0.6) # Adjust scaling factor as needed
+                bright_image = self.scale_image(bright_image, 0.6) # Adjust scaling factor as needed
                 self.character_images.append(image)
                 char_data.image = image
                 char_data.bright_image = bright_image
@@ -138,6 +138,12 @@ class MainScreen:
             except pygame.error as e:
                 print(f"Error loading image {char_data.image_name}: {e}")
                 self.character_images.append(None)
+
+    def scale_image(self, image, scale_factor):
+        # Scale the image by the specified scale factor
+        new_width = int(image.get_width() * scale_factor)
+        new_height = int(image.get_height() * scale_factor)
+        return pygame.transform.scale(image, (new_width, new_height))
 
     def show_story(self):
         story_text = [
@@ -285,7 +291,6 @@ class MainScreen:
     def choose_character(self):
         selected_character = None
         confirm_button_pressed = False
-
         while not confirm_button_pressed:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -293,54 +298,75 @@ class MainScreen:
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, char in enumerate(characters):
-                        if self.character_images[i]:
-                            char_rect_width = self.character_images[i].get_width()
-                            total_width = sum(self.character_images[j].get_width() for j in
-                                              range(len(characters)) if self.character_images[j]) + 50 * (
-                                                  len(characters) - 1)
-                            x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
-                            char.rect.topleft = (x_offset, self.height // 2 - 100)
-                            if char.rect.collidepoint(event.pos):
-                                selected_character = char
-                                char.highlighted = True
-                                for other_char in characters:
-                                    if other_char != char:
-                                        other_char.highlighted = False
-                                break
-
+                        if self.character_images[i] and char.rect and char.rect.collidepoint(event.pos):
+                            selected_character = char
+                            char.highlighted = True
+                            for other_char in characters:
+                                if other_char != char:
+                                    other_char.highlighted = False
+                            break
+                # Separate confirm button handling
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150, 300, 80)
+                    button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
                     if button_rect.collidepoint(event.pos) and selected_character:
                         confirm_button_pressed = True
 
             self.draw_choose_character_screen(selected_character)
             if confirm_button_pressed and selected_character:
-                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height,
-                                             self.stars)
+                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
                 self.selected_character = selected_character
+                self.show_character_intro(selected_character)
         return selected_character
 
-    def draw_choose_character_screen(self, selected_character):
+    def draw_choose_character_screen(self, selected_character=None):
         self.screen.fill(BLACK)
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-        for i, char in enumerate(characters):
-            if self.character_images[i]:
-                char_rect_width = self.character_images[i].get_width()
-                total_width = sum(self.character_images[j].get_width() for j in
-                                  range(len(characters)) if self.character_images[j]) + 50 * (
-                                      len(characters) - 1)
-                x_offset = (self.width - total_width) // 2 + i * (char_rect_width + 50)
-                char.rect.topleft = (x_offset, self.height // 2 - 100)
-                self.screen.blit(char.bright_image if char.highlighted else char.image, char.rect)
 
-        button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150, 300, 80)
-        pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
-        font = pygame.font.SysFont(None, 48)
-        text = font.render("Подтвердить", True, WHITE)
-        text_rect = text.get_rect(center=button_rect.center)
-        self.screen.blit(text, text_rect)
-        pygame.display.flip()
+        if self.character_images:
+            try:
+                russian_soldier_index = characters.index(
+                    next(char for char in characters if char.name == "Русский военный"))
+                russian_soldier_image = self.character_images[russian_soldier_index]
+                target_width = russian_soldier_image.get_width()
+                target_height = russian_soldier_image.get_height()
+            except (StopIteration, ValueError):
+                print("Error: 'Русский военный' not found or images not loaded properly.")
+                return
+
+            spacing = 25
+            total_width = sum(img.get_width() for img in self.character_images) + (len(characters) - 1) * spacing
+            x_offset = max(0, (self.width - total_width) // 2)
+
+            for i, char in enumerate(characters):
+                if self.character_images[i]:
+                    if char.name == "nigerian_soldier":
+                        # Resize Nigerian soldier to match Russian soldier's dimensions
+                        scaled_image = pygame.transform.scale(self.character_images[i], (target_width, target_height))
+                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
+                                                                     (target_width, target_height))
+                        x_pos = (self.width - target_width) // 2  # Center horizontally
+                        y_pos = (self.height - target_height) // 2  # Center vertically
+                        char.rect = pygame.Rect(x_pos, y_pos, target_width, target_height)
+                    else:
+                        # other characters (maintain original scaling)
+                        x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
+                        aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
+                        new_width = int(target_height * aspect_ratio)
+                        scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
+                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
+                                                                     (new_width, target_height))
+                        char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
+
+                    self.screen.blit(scaled_bright_image if char.highlighted else scaled_image, char.rect)
+
+            button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
+            pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
+            font = pygame.font.SysFont(None, 48)
+            text = font.render("Подтвердить", True, WHITE)
+            text_rect = text.get_rect(center=button_rect.center)
+            self.screen.blit(text, text_rect)
+            pygame.display.flip()
 
     def show_exit_menu(self):
         font_title = pygame.font.SysFont(GAME_FONT, 100)
@@ -391,16 +417,52 @@ class MainScreen:
     def show_settings_menu(self):
         running = True
         while running:
-            self.draw_settings_menu()
+            self.screen.fill(BLACK)
+            for star in self.stars:
+                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+            title_font = pygame.font.SysFont(GAME_FONT, 100)
+            title_text = title_font.render("Настройки", True, RED)
+            title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
+            self.screen.blit(title_text, title_rect)
+
+            button_width = self.width // 5
+            button_height = 60
+            button_x = self.width // 2 - button_width // 2
+            button_y_spacing = 30
+            button_texts = ["Назад", "Применить"]
+            self.settings_buttons = []
+
+            for i, text in enumerate(button_texts):
+                button_y = title_rect.bottom + 50 + i * (button_height + button_y_spacing)
+                button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+                pygame.draw.rect(self.screen, GRAY, button_rect)
+                button_font = pygame.font.SysFont(GAME_FONT, 30)
+                button_text = button_font.render(text, True, WHITE)
+                button_text_rect = button_text.get_rect(center=button_rect.center)
+                self.screen.blit(button_text, button_text_rect)
+                self.settings_buttons.append(button_rect)
+
+            # Volume slider
+            slider_width = 300
+            slider_height = 40
+            slider_x = self.width // 2 - slider_width // 2
+            slider_y = title_rect.bottom + 50 + 2 * (button_height + button_y_spacing) + 30
+
+            self.volume_slider_rect = pygame.Rect(slider_x, slider_y, slider_width, slider_height)
+            pygame.draw.rect(self.screen, GRAY, self.volume_slider_rect, border_radius=10)
+
+            thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
+            thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
+            pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
+
+            pygame.display.flip()
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.volume_slider_rect.collidepoint(event.pos):
-                        self.dragging_slider = True
-                        self.adjust_volume(event)
                     for i, rect in enumerate(self.settings_buttons):
                         if rect.collidepoint(event.pos):
                             if self.click_sound:
@@ -409,64 +471,9 @@ class MainScreen:
                                 running = False
                             elif i == 1:
                                 pass
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    self.dragging_slider = False
-                elif event.type == pygame.MOUSEMOTION and self.dragging_slider:
-                    self.adjust_volume(event)
-
-
-    def draw_settings_menu(self):
-        self.screen.fill(BLACK)
-        for star in self.stars:
-            pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-        title_font = pygame.font.SysFont(GAME_FONT, 100)
-        title_text = title_font.render("Настройки", True, RED)
-        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
-        self.screen.blit(title_text, title_rect)
-
-        button_width = self.width // 5
-        button_height = 60
-        button_x = self.width // 2 - button_width // 2
-        button_y_spacing = 30
-        button_texts = ["Назад", "Применить"]
-        self.settings_buttons = []
-
-        try:
-            volume_icon = pygame.image.load(os.path.join(data_dir, "volume.png")).convert_alpha()
-            volume_icon = pygame.transform.scale(volume_icon, (40, 40))  # Adjust size as needed
-        except pygame.error as e:
-            print(f"Error loading volume icon: {e}")
-            volume_icon = None
-
-        for i, text in enumerate(button_texts):
-            button_y = title_rect.bottom + 50 + i * (button_height + button_y_spacing)
-            button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-            pygame.draw.rect(self.screen, GRAY, button_rect)
-            button_font = pygame.font.SysFont(GAME_FONT, 30)
-            button_text = button_font.render(text, True, WHITE)
-            button_text_rect = button_text.get_rect(center=button_rect.center)
-            self.screen.blit(button_text, button_text_rect)
-            self.settings_buttons.append(button_rect)
-
-        # Volume slider - Larger and rounded
-        slider_width = 300
-        slider_height = 40
-        slider_x = self.width // 2 - slider_width // 2
-        slider_y = title_rect.bottom + 50 + 2 * (button_height + button_y_spacing) + 30
-
-        self.volume_slider_rect = pygame.Rect(slider_x, slider_y, slider_width, slider_height)
-        pygame.draw.rect(self.screen, GRAY, self.volume_slider_rect, border_radius=10)
-
-        thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
-        thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
-        pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
-
-        if volume_icon:
-            icon_x = self.volume_slider_rect.left - 50  # Position to the left of the slider
-            icon_y = self.volume_slider_rect.centery - volume_icon.get_height() // 2
-            self.screen.blit(volume_icon, (icon_x, icon_y))
-
-        pygame.display.flip()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.volume_slider_rect.collidepoint(event.pos):
+                        self.adjust_volume(event)
 
     def adjust_volume(self, event):
         slider_width = self.volume_slider_rect.width
@@ -474,6 +481,60 @@ class MainScreen:
         self.volume = max(0, min(1, (mouse_x - self.volume_slider_rect.left) / slider_width))
         if self.click_sound:
             self.click_sound.set_volume(self.volume)
+
+    def show_character_intro(self, selected_character):
+        intro_texts = {
+            "Немецкий медик": [
+                "Вы — опытный немецкий военный медик, оказавшийся втянутым в нечто большее, чем мог представить.",
+                "Ваш профессионализм и хладнокровие – ваши главные козыри в этом безумии.",
+                "Вы прибыли на военную базу в горах России…"
+            ],
+            "Военный Нигерии": [
+                "Вы – опытный солдат из Нигерии, привыкший к жаре и опасностям своей родины.",
+                "Но даже ваша выучка не приготовила вас к суровой реальности этого места.",
+                "Российская военная база в горах стала вашей новой реальностью…"
+            ],
+            "Русский военный": [
+                "Вы — опытный русский военный, привыкший к суровым условиям.",
+                "Но даже вам предстоит столкнуться с угрозой, превосходящей все ваши ожидания.",
+                "Вы находитесь на секретной военной базе в горах России…"
+            ],
+        }
+
+        try:
+            intro_background = pygame.image.load(os.path.join(data_dir, "intro_background.png")).convert()
+            intro_background = pygame.transform.scale(intro_background, (self.width, self.height))
+        except pygame.error as e:
+            print(f"Error loading intro background: {e}")
+            intro_background = None
+
+        font = pygame.font.SysFont(None, 48)
+        y_offset = 100
+        text_surfaces = [font.render(line, True, WHITE) for line in intro_texts.get(selected_character.name, [])] #Handle potential KeyError
+        y_positions = [y_offset + i * 70 for i in range(len(text_surfaces))]
+        clock = pygame.time.Clock()
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    running = False
+
+            if intro_background:
+                self.screen.blit(intro_background, (0, 0))
+            else:
+                self.screen.fill(BLACK)
+            for i, text_surface in enumerate(text_surfaces):
+                text_rect = text_surface.get_rect(center=(self.width // 2, y_positions[i]))
+                self.screen.blit(text_surface, text_rect)
+
+            pygame.display.flip()
+            clock.tick(30)
+        self.screen.fill(BLACK)
 
 
     def load_sounds(self):
