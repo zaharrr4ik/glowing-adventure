@@ -17,6 +17,8 @@ RED = (255, 0, 0)
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
 GAME_FONT = "comicsansms"
+
+
 # Removed fixed CHARACTER_SIZE
 
 class Character:
@@ -30,11 +32,13 @@ class Character:
         self.rect = None
         self.highlighted = False
 
+
 characters = [
     Character("Немецкий медик", "german_medic.png", "german_medic_bright.png", 5),
     Character("Военный Нигерии", "nigerian_soldier.png", "nigerian_soldier_bright.png", 2),
     Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
 ]
+
 
 def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
     font = pygame.font.SysFont(font, font_size)
@@ -119,8 +123,8 @@ class MainScreen:
         draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width // 2, 100, WHITE, font=GAME_FONT)
         if self.selected_character:
             draw_pixel_text(self.screen,
-                             f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
-                             48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
+                            f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
+                            48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
 
     def load_images(self):
         self.character_images = []
@@ -128,9 +132,9 @@ class MainScreen:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
                 bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
-                #Improved scaling calculation.
-                image = self.scale_image(image, 0.6) # Adjust scaling factor as needed
-                bright_image = self.scale_image(bright_image, 0.6) # Adjust scaling factor as needed
+                # Improved scaling calculation.
+                image = self.scale_image(image, 0.6)  # Adjust scaling factor as needed
+                bright_image = self.scale_image(bright_image, 0.6)  # Adjust scaling factor as needed
                 self.character_images.append(image)
                 char_data.image = image
                 char_data.bright_image = bright_image
@@ -145,7 +149,7 @@ class MainScreen:
         new_height = int(image.get_height() * scale_factor)
         return pygame.transform.scale(image, (new_width, new_height))
 
-        def show_story(self):
+    def show_story(self):
         story_text = [
             "В далеком будущем...",
             "Миры соединяются с помощью таинственных порталов.",
@@ -303,7 +307,6 @@ class MainScreen:
                 self.show_character_intro(selected_character)
         return selected_character
 
-
     def draw_choose_character_screen(self, selected_character=None):
         self.screen.fill(BLACK)
         for star in self.stars:
@@ -316,7 +319,7 @@ class MainScreen:
                 russian_soldier_image = self.character_images[russian_soldier_index]
                 target_width = russian_soldier_image.get_width()
                 target_height = russian_soldier_image.get_height()
-            except (StopIteration, ValueError):
+            except (StopIteration, ValueError, IndexError):
                 print("Error: 'Русский военный' not found or images not loaded properly.")
                 return
 
@@ -326,33 +329,36 @@ class MainScreen:
 
             for i, char in enumerate(characters):
                 if self.character_images[i]:
-                    if char.name == "nigerian_soldier":
-                        # Resize Nigerian soldier to match Russian soldier's dimensions
-                        scaled_image = pygame.transform.scale(self.character_images[i], (target_width, target_height))
-                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
-                                                                     (target_width, target_height))
-                        x_pos = (self.width - target_width) // 2  # Center horizontally
-                        y_pos = (self.height - target_height) // 2  # Center vertically
-                        char.rect = pygame.Rect(x_pos, y_pos, target_width, target_height)
-                    else:
-                        # other characters (maintain original scaling)
-                        x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
-                        aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
-                        new_width = int(target_height * aspect_ratio)
-                        scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
-                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
-                                                                     (new_width, target_height))
-                        char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
+                    try:
+                        russian_soldier_index = characters.index(
+                            next(c for c in characters if c.name == "Русский военный"))
+                        base_height = self.character_images[russian_soldier_index].get_height()
+                    except (StopIteration, ValueError, IndexError):
+                        print("Error: 'Русский военный' not found or images not loaded properly.")
+                        return
 
+                    # Determine target height based on character.  No more height adjustment!
+                    target_height = base_height
+
+                    # Maintain aspect ratio
+                    aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
+                    new_width = int(target_height * aspect_ratio)
+
+                    # Scale the images
+                    scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
+                    scaled_bright_image = pygame.transform.scale(characters[i].bright_image, (new_width, target_height))
+
+                    x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
+                    char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
                     self.screen.blit(scaled_bright_image if char.highlighted else scaled_image, char.rect)
 
-            button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
-            pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
-            font = pygame.font.SysFont(None, 48)
-            text = font.render("Подтвердить", True, WHITE)
-            text_rect = text.get_rect(center=button_rect.center)
-            self.screen.blit(text, text_rect)
-            pygame.display.flip()
+        button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
+        pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
+        font = pygame.font.SysFont(None, 48)
+        text = font.render("Подтвердить", True, WHITE)
+        text_rect = text.get_rect(center=button_rect.center)
+        self.screen.blit(text, text_rect)
+        pygame.display.flip()
 
     def show_exit_menu(self):
         font_title = pygame.font.SysFont(GAME_FONT, 100)
@@ -482,7 +488,7 @@ class MainScreen:
         if self.click_sound:
             self.click_sound.set_volume(self.volume)
 
-        def show_character_intro(self, selected_character):
+    def show_character_intro(self, selected_character):
         intro_texts = {
             "Немецкий медик": [
                 "Вы — опытный немецкий военный медик, оказавшийся втянутым в нечто большее, чем мог представить.",
@@ -547,12 +553,47 @@ class MainScreen:
             print(f"Error loading shooting range image: {e}")
             shooting_range_image = None
 
-        if shooting_range_image:
-            self.screen.blit(shooting_range_image, (0, 0))
-        else:
-            self.screen.fill(BLACK)  # Заполняем черным, если изображение не загрузилось
+        # Load character image (using the first character for now)
+        character_image = characters[0].image
 
-        pygame.display.flip()
+        character_x = 50  # Initial x-position
+        character_y = self.height - character_image.get_height() - 50  # Position near the bottom
+        character_speed = 5
+
+        flipped_image = False  # Flag to track if image is flipped
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_d:
+                        character_x += character_speed
+                        flipped_image = False  # Reset flip if moving right
+                    elif event.key == pygame.K_a:
+                        character_x -= character_speed
+                        flipped_image = True  # Flip if moving left
+
+            # Keep character within bounds
+            character_x = max(0, min(character_x, self.width - character_image.get_width()))
+
+            # Flip image horizontally if necessary
+            if flipped_image:
+                displayed_image = pygame.transform.flip(character_image, True, False)
+            else:
+                displayed_image = character_image
+
+            if shooting_range_image:
+                self.screen.blit(shooting_range_image, (0, 0))
+            else:
+                self.screen.fill(BLACK)
+
+            self.screen.blit(displayed_image, (character_x, character_y))
+
+            pygame.display.flip()
 
         # Более гибкое управление временем отображения:
         waiting_time = 5  # секунды
@@ -566,7 +607,6 @@ class MainScreen:
                     break
             if pygame.time.get_ticks() - start_time >= waiting_time * 1000:
                 break
-
 
     def load_sounds(self):
         try:
