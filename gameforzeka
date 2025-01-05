@@ -205,30 +205,40 @@ class MainScreen:
         pygame.display.flip()
         time.sleep(3)
         self.screen.fill(BLACK)
-        self.show_story()
+        self.show_story()  # Show the story sequence
+        self.show_menu_screen()  # Display the main menu after story
+
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE and self.selected_character is None:
-                        self.choose_character()
+                elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        self.show_exit_menu()
-            self.draw()
-            self.show_menu_screen()
+                        self.show_menu_screen()  # Show menu if in shooting range
+                    elif event.key == pygame.K_SPACE and self.selected_character is None:
+                        self.choose_character()
+
+            if self.selected_character:  # Only display the shooting range if a character is selected
+                self.show_shooting_range()
+            pygame.display.flip()
+
+            self.draw()  # Draw the game elements (shooting range)
+
             pygame.display.flip()
 
     def show_menu_screen(self):
-        running = True
-        while running:
+        menu_running = True  # Added a flag to track menu state
+        while menu_running:
             self.draw_menu_screen()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    menu_running = False  # Exit menu and game if quit is pressed
                     pygame.quit()
                     sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        menu_running = False  # Close menu on ESC press
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(self.buttons):
                         if rect.collidepoint(event.pos):
@@ -549,18 +559,18 @@ class MainScreen:
         try:
             shooting_range_image = pygame.image.load(os.path.join(data_dir, "poligon.png")).convert()
             shooting_range_image = pygame.transform.scale(shooting_range_image, (self.width, self.height))
+            dolbaeb_image = pygame.image.load(os.path.join(data_dir, "dolbaeb.png")).convert_alpha()
+            dolbaeb_image = pygame.transform.scale(dolbaeb_image,
+                                                   (dolbaeb_image.get_width() // 2, dolbaeb_image.get_height() // 2))
         except pygame.error as e:
-            print(f"Error loading shooting range image: {e}")
-            shooting_range_image = None
+            print(f"Error loading image: {e}")
+            return
 
-        # Load character image (using the first character for now)
-        character_image = characters[0].image
-
-        character_x = 50  # Initial x-position
-        character_y = self.height - character_image.get_height() - 50  # Position near the bottom
-        character_speed = 5
-
-        flipped_image = False  # Flag to track if image is flipped
+        dolbaeb_x = self.width // 2 - dolbaeb_image.get_width() // 2
+        dolbaeb_y = self.height - dolbaeb_image.get_height() - 28  # Position near the bottom, adjust as needed
+        dolbaeb_speed = 1
+        flipped_image = False
+        keys_pressed = {pygame.K_a: False, pygame.K_d: False}  # Track pressed keys
 
         running = True
         while running:
@@ -569,44 +579,42 @@ class MainScreen:
                     running = False
                     pygame.quit()
                     sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False  # Exit shooting range and return to main loop
+                        self.show_menu_screen()  # Display main menu
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_d:
-                        character_x += character_speed
-                        flipped_image = False  # Reset flip if moving right
+                        keys_pressed[pygame.K_d] = True
                     elif event.key == pygame.K_a:
-                        character_x -= character_speed
-                        flipped_image = True  # Flip if moving left
+                        keys_pressed[pygame.K_a] = True
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_d:
+                        keys_pressed[pygame.K_d] = False
+                    elif event.key == pygame.K_a:
+                        keys_pressed[pygame.K_a] = False
 
-            # Keep character within bounds
-            character_x = max(0, min(character_x, self.width - character_image.get_width()))
+            if keys_pressed[pygame.K_d]:
+                dolbaeb_x += dolbaeb_speed
+                flipped_image = False
+            elif keys_pressed[pygame.K_a]:
+                dolbaeb_x -= dolbaeb_speed
+                flipped_image = True
 
-            # Flip image horizontally if necessary
+            dolbaeb_x = max(0, min(dolbaeb_x, self.width - dolbaeb_image.get_width()))
+
             if flipped_image:
-                displayed_image = pygame.transform.flip(character_image, True, False)
+                displayed_image = pygame.transform.flip(dolbaeb_image, True, False)
             else:
-                displayed_image = character_image
+                displayed_image = dolbaeb_image
 
             if shooting_range_image:
                 self.screen.blit(shooting_range_image, (0, 0))
             else:
                 self.screen.fill(BLACK)
 
-            self.screen.blit(displayed_image, (character_x, character_y))
-
+            self.screen.blit(displayed_image, (dolbaeb_x, dolbaeb_y))
             pygame.display.flip()
-
-        # Более гибкое управление временем отображения:
-        waiting_time = 5  # секунды
-        start_time = pygame.time.get_ticks()
-        while pygame.time.get_ticks() - start_time < waiting_time * 1000:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:  # Выход по нажатию клавиши
-                    break
-            if pygame.time.get_ticks() - start_time >= waiting_time * 1000:
-                break
 
     def load_sounds(self):
         try:
