@@ -490,21 +490,21 @@ class MainScreen:
         if self.click_sound:
             self.click_sound.set_volume(self.volume)
 
-    def show_character_intro(self, selected_character):
+        def show_character_intro(self, selected_character):
         intro_texts = {
             "Немецкий медик": [
                 "Вы — опытный немецкий военный медик, оказавшийся втянутым в нечто большее, чем мог представить.",
-                "Ваш профессионализм и хладнокровие – ваши главные козыри в этом безумии.",
+                f"Вас зовут {self.player_name}, и ваш профессионализм и хладнокровие – ваши главные козыри в этом безумии.",
                 "Вы прибыли на военную базу в России…"
             ],
             "Военный Нигерии": [
-                "Вы – опытный солдат из Нигерии, привыкший к жаре и опасностям своей родины.",
-                "Но даже ваша выучка не приготовила вас к суровой реальности этого места.",
+                "Вы — опытный солдат из Нигерии, привыкший к жаре и опасностям своей родины.",
+                f"Вас зовут {self.player_name}, но даже ваша выучка не приготовила вас к суровой реальности этого места.",
                 "Российская военная база стала вашей новой реальностью…"
             ],
             "Русский военный": [
                 "Вы — опытный русский военный, привыкший к суровым условиям.",
-                "Но даже вам предстоит столкнуться с угрозой, превосходящей все ваши ожидания.",
+                f"Вас зовут {self.player_name}, но даже вам предстоит столкнуться с угрозой, превосходящей все ваши ожидания.",
                 "Вы находитесь на секретной военной базе в России…"
             ],
         }
@@ -517,8 +517,10 @@ class MainScreen:
             intro_background = None
 
         font = pygame.font.SysFont(None, 48)
+        DARK_GRAY = (50, 50, 50)  # Added dark gray color
         y_offset = 100
-        text_surfaces = [font.render(line, True, WHITE) for line in intro_texts.get(selected_character.name, [])]
+        text_surfaces = [font.render(line, True, DARK_GRAY) for line in
+                         intro_texts.get(selected_character.name, [])]  # Changed text color
         y_positions = [y_offset + i * 70 for i in range(len(text_surfaces))]
         clock = pygame.time.Clock()
 
