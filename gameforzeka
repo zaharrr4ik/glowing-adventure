@@ -147,31 +147,24 @@ class MainScreen:
 
     def show_story(self):
         story_text = [
-            "В далекой галактике,",
-            "на краю забытых миров...",
-            "силы Вселенной медленно",
-            "угасают. Три могущественных",
-            "существа поглощают её",
-            "энергию. В отчаянной",
-            "попытке спастись,",
-            "мир отдал последнюю",
-            "надежду – угасшую душу,",
-            "затерянную среди звёзд.",
-            "Эта душа – ваш герой.",
-            "Он наделён огромной силой,",
-            "но пока слаб и беззащитен.",
-            "Его миссия – уничтожить",
-            "эти существа,",
-            "прежде чем они",
-            "поглотят всю энергию",
-            "Вселенной. Путь будет",
-            "опасен и долог,",
-            "но судьба галактики",
-            "в ваших руках.",
-            "Найдите силу внутри себя,",
-            "герой. Спасение зависит",
-            "только от вас.",
-            "Готовьтесь к приключению!"
+             "В сердце войны,",
+            "на забытых полях...",
+            "солдаты падают.",
+            "Битвы с инопланетянами бесконечны.",
+            "Надвигается катастрофа.",
+            "Надежды нет. Армада неумолима.",
+            "Армия ищет спасения.",
+            "Солдат – последняя надежда.",
+            "Он закален в боях.",
+            "Он мужествен и отважен.",
+            "Но он изранен и измучен.",
+            "Его задача – остановить врага.",
+            "Инопланетяне угрожают всему живому.",
+            "Путь будет опасен.",
+            "Судьба страны в его руках.",
+            "Найдите силу, солдат.",
+            "Спасение зависит от вас.",
+            "Готовьтесь к бою!"
         ]
         font = pygame.font.SysFont(None, 64)
         y_offset = 100
@@ -325,26 +318,49 @@ class MainScreen:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
         if self.character_images:
+            try:
+                russian_soldier_index = characters.index(
+                    next(char for char in characters if char.name == "Русский военный"))
+                russian_soldier_image = self.character_images[russian_soldier_index]
+                target_width = russian_soldier_image.get_width()
+                target_height = russian_soldier_image.get_height()
+            except (StopIteration, ValueError):
+                print("Error: 'Русский военный' not found or images not loaded properly.")
+                return
+
             spacing = 25
             total_width = sum(img.get_width() for img in self.character_images) + (len(characters) - 1) * spacing
-            x_offset = (self.width - total_width) // 2
-            #Corrected Y position calculation
-            max_height = max(img.get_height() for img in self.character_images)
-            y_pos = self.height // 2 - max_height // 2
+            x_offset = max(0, (self.width - total_width) // 2)
 
             for i, char in enumerate(characters):
                 if self.character_images[i]:
-                    x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
-                    char.rect = pygame.Rect(x_pos, y_pos, self.character_images[i].get_width(), self.character_images[i].get_height())
-                    self.screen.blit(char.bright_image if char.highlighted else char.image, char.rect)
+                    if char.name == "nigerian_soldier":
+                        # Resize Nigerian soldier to match Russian soldier's dimensions
+                        scaled_image = pygame.transform.scale(self.character_images[i], (target_width, target_height))
+                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
+                                                                     (target_width, target_height))
+                        x_pos = (self.width - target_width) // 2  # Center horizontally
+                        y_pos = (self.height - target_height) // 2  # Center vertically
+                        char.rect = pygame.Rect(x_pos, y_pos, target_width, target_height)
+                    else:
+                        # other characters (maintain original scaling)
+                        x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
+                        aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
+                        new_width = int(target_height * aspect_ratio)
+                        scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
+                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
+                                                                     (new_width, target_height))
+                        char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
 
-        button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
-        pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
-        font = pygame.font.SysFont(None, 48)
-        text = font.render("Подтвердить", True, WHITE)
-        text_rect = text.get_rect(center=button_rect.center)
-        self.screen.blit(text, text_rect)
-        pygame.display.flip()
+                    self.screen.blit(scaled_bright_image if char.highlighted else scaled_image, char.rect)
+
+            button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
+            pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
+            font = pygame.font.SysFont(None, 48)
+            text = font.render("Подтвердить", True, WHITE)
+            text_rect = text.get_rect(center=button_rect.center)
+            self.screen.blit(text, text_rect)
+            pygame.display.flip()
 
     def show_exit_menu(self):
         font_title = pygame.font.SysFont(GAME_FONT, 100)
@@ -392,7 +408,7 @@ class MainScreen:
 
             pygame.display.flip()
 
-        def show_settings_menu(self):
+    def show_settings_menu(self):
         running = True
         self.dragging_slider = False  # Добавлена переменная для отслеживания перетаскивания
         while running:
@@ -479,17 +495,17 @@ class MainScreen:
             "Немецкий медик": [
                 "Вы — опытный немецкий военный медик, оказавшийся втянутым в нечто большее, чем мог представить.",
                 "Ваш профессионализм и хладнокровие – ваши главные козыри в этом безумии.",
-                "Вы прибыли на военную базу в горах России…"
+                "Вы прибыли на военную базу в России…"
             ],
             "Военный Нигерии": [
                 "Вы – опытный солдат из Нигерии, привыкший к жаре и опасностям своей родины.",
                 "Но даже ваша выучка не приготовила вас к суровой реальности этого места.",
-                "Российская военная база в горах стала вашей новой реальностью…"
+                "Российская военная база стала вашей новой реальностью…"
             ],
             "Русский военный": [
                 "Вы — опытный русский военный, привыкший к суровым условиям.",
                 "Но даже вам предстоит столкнуться с угрозой, превосходящей все ваши ожидания.",
-                "Вы находитесь на секретной военной базе в горах России…"
+                "Вы находитесь на секретной военной базе в России…"
             ],
         }
 
@@ -502,7 +518,7 @@ class MainScreen:
 
         font = pygame.font.SysFont(None, 48)
         y_offset = 100
-        text_surfaces = [font.render(line, True, WHITE) for line in intro_texts.get(selected_character.name, [])] #Handle potential KeyError
+        text_surfaces = [font.render(line, True, WHITE) for line in intro_texts.get(selected_character.name, [])]
         y_positions = [y_offset + i * 70 for i in range(len(text_surfaces))]
         clock = pygame.time.Clock()
 
@@ -526,7 +542,36 @@ class MainScreen:
 
             pygame.display.flip()
             clock.tick(30)
-        self.screen.fill(BLACK)
+        self.screen.fill(BLACK)  # Очищаем экран после вступления
+        self.show_shooting_range()  # Вызываем функцию отображения полигона
+
+    def show_shooting_range(self):
+        try:
+            shooting_range_image = pygame.image.load(os.path.join(data_dir, "poligon.png")).convert()
+            shooting_range_image = pygame.transform.scale(shooting_range_image, (self.width, self.height))
+        except pygame.error as e:
+            print(f"Error loading shooting range image: {e}")
+            shooting_range_image = None
+
+        if shooting_range_image:
+            self.screen.blit(shooting_range_image, (0, 0))
+        else:
+            self.screen.fill(BLACK)  # Заполняем черным, если изображение не загрузилось
+
+        pygame.display.flip()
+
+        # Более гибкое управление временем отображения:
+        waiting_time = 5  # секунды
+        start_time = pygame.time.get_ticks()
+        while pygame.time.get_ticks() - start_time < waiting_time * 1000:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:  # Выход по нажатию клавиши
+                    break
+            if pygame.time.get_ticks() - start_time >= waiting_time * 1000:
+                break
 
 
     def load_sounds(self):
@@ -544,4 +589,3 @@ mainscreen = MainScreen(infoObject.current_w, infoObject.current_h)
 mainscreen.run()
 pygame.quit()
 sys.exit()
-
