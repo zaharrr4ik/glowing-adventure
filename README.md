@@ -9,3 +9,5 @@
 ![nigerian_soldier_bright](https://github.com/user-attachments/assets/b5fbfd33-6568-47c1-8def-4a2f4dd07087)
 ![russian_soldier](https://github.com/user-attachments/assets/a7fd9282-11af-4cdd-bc41-d177c0a9dde6)
 ![russian_soldier_bright](https://github.com/user-attachments/assets/0e3a80e2-df20-4be1-98f0-52daa737e226)
+![intro_background](https://github.com/user-attachments/assets/c48cd4fe-ca01-4de7-a2be-4a1221bdf3af)
+![poligon](https://github.com/user-attachments/assets/c1a0a05f-8ae2-495c-b4ce-7c90541f80b2)
