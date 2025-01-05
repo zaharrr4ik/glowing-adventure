@@ -11,3 +11,4 @@
 ![russian_soldier_bright](https://github.com/user-attachments/assets/0e3a80e2-df20-4be1-98f0-52daa737e226)
 ![intro_background](https://github.com/user-attachments/assets/c48cd4fe-ca01-4de7-a2be-4a1221bdf3af)
 ![poligon](https://github.com/user-attachments/assets/c1a0a05f-8ae2-495c-b4ce-7c90541f80b2)
+![dolbaeb](https://github.com/user-attachments/assets/0c362da6-eac1-4555-a6d0-4ec34f637a33)
