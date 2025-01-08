@@ -17,6 +17,8 @@ RED = (255, 0, 0)
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
 GAME_FONT = "comicsansms"
+
+
 # Removed fixed CHARACTER_SIZE
 
 class Character:
@@ -30,18 +32,20 @@ class Character:
         self.rect = None
         self.highlighted = False
 
+
 characters = [
     Character("Немецкий медик", "german_medic.png", "german_medic_bright.png", 5),
     Character("Военный Нигерии", "nigerian_soldier.png", "nigerian_soldier_bright.png", 2),
     Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
 ]
 
+
 def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
     font = pygame.font.SysFont(font, font_size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(x, y))
     blurred_surface = pygame.transform.scale(text_surface,
-                                             (text_surface.get_width() * 2, text_surface.get_height() * 2))
+                                            (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, text_rect)
 
@@ -104,6 +108,13 @@ class MainScreen:
         self.volume = 0.5
         self.dragging_slider = False
         self.load_sounds()
+        self.dolbaeb_x = 0
+        self.dolbaeb_y = 0
+        self.flipped_image = False
+        self.menu_opened_from_shooting_range = False
+        self.previous_dolbaeb_x = 0
+        self.previous_dolbaeb_y = 0
+        self.previous_flipped_image = False
 
     def generate_stars(self, num_stars):
         for _ in range(num_stars):
@@ -119,8 +130,8 @@ class MainScreen:
         draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width // 2, 100, WHITE, font=GAME_FONT)
         if self.selected_character:
             draw_pixel_text(self.screen,
-                             f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
-                             48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
+                            f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
+                            48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
 
     def load_images(self):
         self.character_images = []
@@ -128,9 +139,9 @@ class MainScreen:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
                 bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
-                #Improved scaling calculation.
-                image = self.scale_image(image, 0.6) # Adjust scaling factor as needed
-                bright_image = self.scale_image(bright_image, 0.6) # Adjust scaling factor as needed
+                # Improved scaling calculation.
+                image = self.scale_image(image, 0.6)  # Adjust scaling factor as needed
+                bright_image = self.scale_image(bright_image, 0.6)  # Adjust scaling factor as needed
                 self.character_images.append(image)
                 char_data.image = image
                 char_data.bright_image = bright_image
@@ -147,37 +158,22 @@ class MainScreen:
 
     def show_story(self):
         story_text = [
-            "В далекой галактике,",
-            "на краю забытых миров...",
-            "силы Вселенной медленно",
-            "угасают. Три могущественных",
-            "существа поглощают её",
-            "энергию. В отчаянной",
-            "попытке спастись,",
-            "мир отдал последнюю",
-            "надежду – угасшую душу,",
-            "затерянную среди звёзд.",
-            "Эта душа – ваш герой.",
-            "Он наделён огромной силой,",
-            "но пока слаб и беззащитен.",
-            "Его миссия – уничтожить",
-            "эти существа,",
-            "прежде чем они",
-            "поглотят всю энергию",
-            "Вселенной. Путь будет",
-            "опасен и долог,",
-            "но судьба галактики",
-            "в ваших руках.",
-            "Найдите силу внутри себя,",
-            "герой. Спасение зависит",
-            "только от вас.",
-            "Готовьтесь к приключению!"
+            "В далеком будущем...",
+            "Миры соединяются с помощью таинственных порталов.",
+            "Они стремятся разрушить все на своем пути.",
+            "Города падут, и надежда угаснет, если не встать на защиту.",
+            "Но среди хаоса появляются герои — отважные защитники.",
+            "Они готовы сразиться с надвигающейся угрозой.",
+            "Объединив силы, герои должны закрыть портал и остановить нашествие.",
+            "Судьба человечества висит на волоске.",
+            "Приготовьтесь к битве за выживание.",
+            "Время действовать настало!"
         ]
         font = pygame.font.SysFont(None, 64)
-        y_offset = 100
+        y_offset = 200  # Увеличено начальное значение для смещения текста вниз
         text_surfaces = [font.render(line, True, YELLOW) for line in story_text]
         y_positions = [y_offset + i * 70 for i in range(len(story_text))]
-        scroll_speed = 2
+        scroll_speed = 1
         all_lines_offscreen = False
         skip_story = False
         running = True
@@ -216,30 +212,50 @@ class MainScreen:
         pygame.display.flip()
         time.sleep(3)
         self.screen.fill(BLACK)
-        self.show_story()
+        self.show_story()  # Show the story sequence
+        self.show_menu_screen()  # Display the main menu after story
+
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE and self.selected_character is None:
-                        self.choose_character()
+                elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        self.show_exit_menu()
-            self.draw()
-            self.show_menu_screen()
+                        if self.selected_character:
+                            self.show_menu_screen()
+                        else:
+                            self.show_menu_screen()
+                    elif event.key == pygame.K_SPACE and self.selected_character is None:
+                        self.choose_character()
+
+            if self.selected_character:  # Only display the shooting range if a character is selected
+                self.show_shooting_range()
+            self.draw()  # Draw the game elements (shooting range)
             pygame.display.flip()
 
+        pygame.quit()
+        sys.exit()
+
     def show_menu_screen(self):
-        running = True
-        while running:
+        menu_running = True  # Added a flag to track menu state
+        self.menu_opened_from_shooting_range = False
+
+        if self.selected_character:
+            self.previous_dolbaeb_x = self.dolbaeb_x
+            self.previous_dolbaeb_y = self.dolbaeb_y
+            self.previous_flipped_image = self.flipped_image
+
+        while menu_running:
             self.draw_menu_screen()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    menu_running = False  # Exit menu and game if quit is pressed
                     pygame.quit()
                     sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        menu_running = False  # Close menu on ESC press
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(self.buttons):
                         if rect.collidepoint(event.pos):
@@ -247,12 +263,16 @@ class MainScreen:
                                 self.click_sound.play()
                             if i == 0:
                                 self.choose_character()
+                            elif i == 1:  # Continue Game
+                                menu_running = False
+                                if self.menu_opened_from_shooting_range:  # Restore position if closing menu from shooting range
+                                    self.dolbaeb_x = self.previous_dolbaeb_x
+                                    self.dolbaeb_y = self.previous_dolbaeb_y
+                                    self.flipped_image = self.previous_flipped_image
                             elif i == 3:
                                 self.show_settings_menu()
                             elif i == 4:
                                 self.show_exit_menu()
-                            else:
-                                print(f"Button {i + 1} clicked")
 
     def draw_menu_screen(self):
         self.screen.fill(BLACK)
@@ -305,17 +325,17 @@ class MainScreen:
                                 if other_char != char:
                                     other_char.highlighted = False
                             break
-                # Separate confirm button handling
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
-                    if button_rect.collidepoint(event.pos) and selected_character:
-                        confirm_button_pressed = True
+                    # Separate confirm button handling
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
+                        if button_rect.collidepoint(event.pos) and selected_character:
+                            confirm_button_pressed = True
 
             self.draw_choose_character_screen(selected_character)
-            if confirm_button_pressed and selected_character:
-                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
-                self.selected_character = selected_character
-                self.show_character_intro(selected_character)
+        if confirm_button_pressed and selected_character:
+            self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
+            self.selected_character = selected_character
+            self.show_character_intro(selected_character)
         return selected_character
 
     def draw_choose_character_screen(self, selected_character=None):
@@ -330,7 +350,7 @@ class MainScreen:
                 russian_soldier_image = self.character_images[russian_soldier_index]
                 target_width = russian_soldier_image.get_width()
                 target_height = russian_soldier_image.get_height()
-            except (StopIteration, ValueError):
+            except (StopIteration, ValueError, IndexError):
                 print("Error: 'Русский военный' not found or images not loaded properly.")
                 return
 
@@ -340,24 +360,28 @@ class MainScreen:
 
             for i, char in enumerate(characters):
                 if self.character_images[i]:
-                    if char.name == "nigerian_soldier":
-                        # Resize Nigerian soldier to match Russian soldier's dimensions
-                        scaled_image = pygame.transform.scale(self.character_images[i], (target_width, target_height))
-                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
-                                                                     (target_width, target_height))
-                        x_pos = (self.width - target_width) // 2  # Center horizontally
-                        y_pos = (self.height - target_height) // 2  # Center vertically
-                        char.rect = pygame.Rect(x_pos, y_pos, target_width, target_height)
-                    else:
-                        # other characters (maintain original scaling)
-                        x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
-                        aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
-                        new_width = int(target_height * aspect_ratio)
-                        scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
-                        scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
-                                                                     (new_width, target_height))
-                        char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
+                    try:
+                        russian_soldier_index = characters.index(
+                            next(c for c in characters if c.name == "Русский военный"))
+                        base_height = self.character_images[russian_soldier_index].get_height()
+                    except (StopIteration, ValueError, IndexError):
+                        print("Error: 'Русский военный' not found or images not loaded properly.")
+                        return
 
+                    # Determine target height based on character. No more height adjustment!
+                    target_height = base_height
+
+                    # Maintain aspect ratio
+                    aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
+                    new_width = int(target_height * aspect_ratio)
+
+                    # Scale the images
+                    scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
+                    scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
+                                                                (new_width, target_height))
+
+                    x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
+                    char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
                     self.screen.blit(scaled_bright_image if char.highlighted else scaled_image, char.rect)
 
             button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
@@ -416,6 +440,7 @@ class MainScreen:
 
     def show_settings_menu(self):
         running = True
+        self.dragging_slider = False  # Добавлена переменная для отслеживания перетаскивания
         while running:
             self.screen.fill(BLACK)
             for star in self.stars:
@@ -470,10 +495,23 @@ class MainScreen:
                             if i == 0:
                                 running = False
                             elif i == 1:
-                                pass
-                elif event.type == pygame.MOUSEBUTTONDOWN:
+                                pass  # Применение настроек (пока ничего не делаем)
                     if self.volume_slider_rect.collidepoint(event.pos):
+                        self.dragging_slider = True  # Начало перетаскивания
                         self.adjust_volume(event)
+                        thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
+                        thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
+                        pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
+                        pygame.display.flip()
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.dragging_slider = False  # Конец перетаскивания
+                elif event.type == pygame.MOUSEMOTION:
+                    if self.dragging_slider:
+                        self.adjust_volume(event)
+                        thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
+                        thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
+                        pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
+                        pygame.display.flip()
 
     def adjust_volume(self, event):
         slider_width = self.volume_slider_rect.width
@@ -486,18 +524,18 @@ class MainScreen:
         intro_texts = {
             "Немецкий медик": [
                 "Вы — опытный немецкий военный медик, оказавшийся втянутым в нечто большее, чем мог представить.",
-                "Ваш профессионализм и хладнокровие – ваши главные козыри в этом безумии.",
-                "Вы прибыли на военную базу в горах России…"
+                f"Вас зовут {self.player_name}, и ваш профессионализм и хладнокровие – ваши главные козыри в этом безумии.",
+                "Вы прибыли на военную базу в России…"
             ],
             "Военный Нигерии": [
-                "Вы – опытный солдат из Нигерии, привыкший к жаре и опасностям своей родины.",
-                "Но даже ваша выучка не приготовила вас к суровой реальности этого места.",
-                "Российская военная база в горах стала вашей новой реальностью…"
+                "Вы — опытный солдат из Нигерии, привыкший к жаре и опасностям своей родины.",
+                f"Вас зовут {self.player_name}, но даже ваша выучка не приготовила вас к суровой реальности этого места.",
+                "Российская военная база стала вашей новой реальностью…"
             ],
             "Русский военный": [
                 "Вы — опытный русский военный, привыкший к суровым условиям.",
-                "Но даже вам предстоит столкнуться с угрозой, превосходящей все ваши ожидания.",
-                "Вы находитесь на секретной военной базе в горах России…"
+                f"Вас зовут {self.player_name}, но даже вам предстоит столкнуться с угрозой, превосходящей все ваши ожидания.",
+                "Вы находитесь на секретной военной базе в России…"
             ],
         }
 
@@ -509,8 +547,10 @@ class MainScreen:
             intro_background = None
 
         font = pygame.font.SysFont(None, 48)
+        DARK_GRAY = (50, 50, 50)  # Added dark gray color
         y_offset = 100
-        text_surfaces = [font.render(line, True, WHITE) for line in intro_texts.get(selected_character.name, [])] #Handle potential KeyError
+        text_surfaces = [font.render(line, True, DARK_GRAY) for line in
+                         intro_texts.get(selected_character.name, [])]  # Changed text color
         y_positions = [y_offset + i * 70 for i in range(len(text_surfaces))]
         clock = pygame.time.Clock()
 
@@ -534,8 +574,208 @@ class MainScreen:
 
             pygame.display.flip()
             clock.tick(30)
-        self.screen.fill(BLACK)
+        self.screen.fill(BLACK)  # Очищаем экран после вступления
+        self.show_shooting_range()  # Вызываем функцию отображения полигона
 
+    def show_shooting_range(self):
+        """Displays the shooting range game screen with shooting animation."""
+        try:
+            # Load images
+            shooting_range_image = pygame.image.load(os.path.join(data_dir, "poligon.png")).convert()
+            shooting_range_image = pygame.transform.scale(shooting_range_image, (self.width, self.height))
+            dolbaeb_image = pygame.image.load(os.path.join(data_dir, "dolbaeb.png")).convert_alpha()
+            dolbaeb_image = pygame.transform.scale(dolbaeb_image,
+                                                   (dolbaeb_image.get_width() // 2, dolbaeb_image.get_height() // 2))
+            target_image = pygame.image.load(os.path.join(data_dir, "target.png")).convert_alpha()
+            target_image = pygame.transform.scale(target_image,
+                                                  (target_image.get_width() // 2, target_image.get_height() // 2))
+            patron_image = pygame.image.load(os.path.join(data_dir, "patron.png")).convert_alpha()
+            patron_image = pygame.transform.scale(patron_image,
+                                                  (patron_image.get_width() // 2, patron_image.get_height() // 2))
+            aim_cursor_image = pygame.image.load(os.path.join(data_dir, "aim.png")).convert_alpha()
+            aim_cursor_image = pygame.transform.scale(aim_cursor_image, (
+            aim_cursor_image.get_width() // 2, aim_cursor_image.get_height() // 2))
+
+            # Load sounds
+            self.walk_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "dirt_run.wav"))
+            self.walk_sound.set_volume(self.volume)
+            self.reload_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "reload.wav"))
+            self.reload_sound.set_volume(self.volume)
+            self.shot_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "shot.wav"))
+            self.shot_sound.set_volume(0.1)
+
+            # Load sprite sheet
+            sprite_sheet = None
+            try:
+                sprite_sheet = pygame.image.load(os.path.join(data_dir, "russian_shoot.png")).convert_alpha()
+            except pygame.error as e:
+                print(f"Error loading sprite sheet: {e}")
+
+            # Sprite sheet parameters
+            sprite_width = 64
+            sprite_height = 64
+            num_frames = 2
+
+            # Extract frames from sprite sheet
+            shoot_animation = []
+            if sprite_sheet:
+                for i in range(num_frames):
+                    frame = sprite_sheet.subsurface(pygame.Rect(i * sprite_width, 0, sprite_width, sprite_height))
+                    frame = pygame.transform.scale(frame, (frame.get_width() // 2, frame.get_height() // 2))
+                    shoot_animation.append(frame)
+
+            # Create and set cursor
+            self.aim_cursor, self.aim_cursor_rect = self.create_cursor(aim_cursor_image)
+            if self.aim_cursor is None:
+                pygame.mouse.set_visible(True)
+
+        except pygame.error as e:
+            print(f"Error loading resources: {e}")
+            return
+
+        # Game variables
+        dolbaeb_x = self.dolbaeb_x
+        dolbaeb_y = self.height - dolbaeb_image.get_height() - 20
+        dolbaeb_speed = 3
+        flipped_image = self.flipped_image
+        keys_pressed = {pygame.K_a: False, pygame.K_d: False}
+        walk_sound_playing = False
+        target_x = self.width - target_image.get_width() - 50
+        target_y = self.height - target_image.get_height() - 30
+        ammo = 10
+        reloading = False
+        reload_start_time = 0
+        shooting = False
+        shot_start_time = 0
+        animation_start_time = 0
+        animation_duration = 250
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                        self.menu_opened_from_shooting_range = True
+                        self.show_menu_screen()
+                    elif event.key == pygame.K_d:
+                        keys_pressed[pygame.K_d] = True
+                    elif event.key == pygame.K_a:
+                        keys_pressed[pygame.K_a] = True
+                    elif event.key == pygame.K_r and not reloading and ammo < 10:
+                        reloading = True
+                        reload_start_time = pygame.time.get_ticks()
+                        if self.reload_sound:
+                            self.reload_sound.play()
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_d:
+                        keys_pressed[pygame.K_d] = False
+                    elif event.key == pygame.K_a:
+                        keys_pressed[pygame.K_a] = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not reloading and ammo > 0:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    if target_image.get_rect(topleft=(target_x, target_y)).collidepoint(mouse_x, mouse_y):
+                        ammo -= 1
+                        shooting = True
+                        shot_start_time = pygame.time.get_ticks()
+                        animation_start_time = pygame.time.get_ticks()
+                        if self.shot_sound:
+                            self.shot_sound.play()
+
+            if reloading:
+                if pygame.time.get_ticks() - reload_start_time >= 2000:
+                    ammo = 10
+                    reloading = False
+
+            if shooting:
+                if pygame.time.get_ticks() - shot_start_time >= 500:
+                    shooting = False
+
+            if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_a]:
+                if not walk_sound_playing and self.walk_sound:
+                    self.walk_sound.play(-1)
+                    walk_sound_playing = True
+            else:
+                if walk_sound_playing and self.walk_sound:
+                    self.walk_sound.stop()
+                    walk_sound_playing = False
+
+            if keys_pressed[pygame.K_d]:
+                dolbaeb_x += dolbaeb_speed
+                flipped_image = False
+            elif keys_pressed[pygame.K_a]:
+                dolbaeb_x -= dolbaeb_speed
+                flipped_image = True
+
+            dolbaeb_x = max(0, min(dolbaeb_x, self.width - dolbaeb_image.get_width()))
+
+            if flipped_image:
+                displayed_image = pygame.transform.flip(dolbaeb_image, True, False)
+            else:
+                displayed_image = dolbaeb_image
+
+            patron_x = dolbaeb_x + dolbaeb_image.get_width() // 2 - patron_image.get_width() // 2 - 32
+            patron_y = dolbaeb_y - patron_image.get_height() + 55
+
+            self.screen.fill(BLACK)  # Clear the screen each frame
+
+            if shooting_range_image:
+                self.screen.blit(shooting_range_image, (0, 0))
+
+            # Always draw the character image first
+            self.screen.blit(displayed_image, (dolbaeb_x, dolbaeb_y))
+
+            if shooting and shoot_animation:
+                elapsed_time = pygame.time.get_ticks() - animation_start_time
+                animation_frame = min(len(shoot_animation) - 1, elapsed_time // animation_duration)
+                self.screen.blit(shoot_animation[animation_frame], (dolbaeb_x, dolbaeb_y))  # Overlay animation
+                if elapsed_time >= len(shoot_animation) * animation_duration:
+                    shooting = False
+
+            if target_image:
+                self.screen.blit(target_image, (target_x, target_y))
+
+            if patron_image:
+                self.screen.blit(patron_image, (patron_x, patron_y))
+                font = pygame.font.SysFont(None, 36)
+                ammo_text = font.render(str(ammo), True, WHITE)
+                text_rect = ammo_text.get_rect(center=(patron_x + patron_image.get_width() // 2,
+                                                       patron_y + patron_image.get_height() // 2 - 10))
+                self.screen.blit(ammo_text, text_rect)
+
+            if self.aim_cursor and self.aim_cursor_rect and target_image.get_rect(
+                    topleft=(target_x, target_y)).collidepoint(pygame.mouse.get_pos()):
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                self.screen.blit(self.aim_cursor, (
+                mouse_x - self.aim_cursor_rect.width // 2, mouse_y - self.aim_cursor_rect.height // 2))
+            else:
+                pygame.mouse.set_visible(True)
+
+            pygame.display.flip()
+
+            self.dolbaeb_x = dolbaeb_x
+            self.flipped_image = flipped_image
+
+    def create_cursor(self, cursor_image):
+        """Creates a Pygame cursor from an image. Handles potential errors."""
+        try:
+            # Check if the image is actually loaded
+            if cursor_image is None:
+                print("Warning: Cursor image not loaded correctly.")
+                return None, None
+
+            cursor_rect = cursor_image.get_rect()
+            return cursor_image, cursor_rect  # Return Surface and Rect
+        except AttributeError as e:
+            print(f"Error getting cursor rect: {e}")
+            return None, None
+        except Exception as e:
+            print(f"An unexpected error occurred in create_cursor: {e}")
+            return None, None
 
     def load_sounds(self):
         try:
