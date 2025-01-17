@@ -138,6 +138,9 @@ class MainScreen:
         self.previous_test_x = 0
         self.previous_test_y = 0
         self.previous_flipped_image = False
+        self.test_x = 0
+        self.test_y = 0
+        self.flipped_image = False
 
     def run(self):
         draw_pixel_text(self.screen, "Сквозь Миры", 150, self.width // 2, self.height // 3, YELLOW, font=GAME_FONT)
@@ -220,19 +223,24 @@ class MainScreen:
 
     def load_images(self):
         self.character_images = []
-        for char_data in create_characters():
+        for char_data in characters:
             try:
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
                 bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
                 image = scale_image(image, 0.6)
                 bright_image = scale_image(bright_image, 0.6)
-                self.character_images.append(image)
-                char_data.image = image
-                char_data.bright_image = bright_image
-                char_data.rect = image.get_rect()
+
+                # Проверка на успешную загрузку обоих изображений
+                if image and bright_image:
+                    self.character_images.append(image)
+                    char_data.image = image
+                    char_data.bright_image = bright_image
+                    char_data.rect = image.get_rect()
+                else:
+                    print(f"Error loading images for {char_data.name}. Skipping character.")
+
             except pygame.error as e:
-                print(f"Error loading image {char_data.image_name}: {e}")
-                self.character_images.append(None)
+                print(f"Error loading images for {char_data.name}: {e}. Skipping character.")
 
     def load_sounds(self):
         try:
@@ -296,7 +304,9 @@ class MainScreen:
     def show_menu_screen(self):
         menu_running = True
         self.menu_opened_from_shooting_range = False
-
+        self.test_x = 0
+        self.test_y = 0
+        self.flipped_image = False
         if self.selected_character:
             self.previous_test_x = self.test_x
             self.previous_test_y = self.test_y
@@ -509,17 +519,20 @@ class MainScreen:
         self.show_shooting_range()
 
     def show_shooting_range(self):
+        """Displays the shooting range game screen without shooting animation."""
         try:
+            # Load resources
             shooting_range_image = pygame.image.load(os.path.join(data_dir, "poligon.png")).convert()
             shooting_range_image = pygame.transform.scale(shooting_range_image, (self.width, self.height))
-            test_image = pygame.image.load(os.path.join(data_dir, "test.png")).convert_alpha()
-            test_image = pygame.transform.scale(test_image, (test_image.get_width() // 2, test_image.get_height() // 2))
             target_image = pygame.image.load(os.path.join(data_dir, "target.png")).convert_alpha()
-            target_image = pygame.transform.scale(target_image, (target_image.get_width() // 2, target_image.get_height() // 2))
+            target_image = pygame.transform.scale(target_image,
+                                                  (target_image.get_width() // 2, target_image.get_height() // 2))
             patron_image = pygame.image.load(os.path.join(data_dir, "patron.png")).convert_alpha()
-            patron_image = pygame.transform.scale(patron_image, (patron_image.get_width() // 2, patron_image.get_height() // 2))
+            patron_image = pygame.transform.scale(patron_image,
+                                                  (patron_image.get_width() // 2, patron_image.get_height() // 2))
             aim_cursor_image = pygame.image.load(os.path.join(data_dir, "aim.png")).convert_alpha()
-            aim_cursor_image = pygame.transform.scale(aim_cursor_image, (aim_cursor_image.get_width() // 2, aim_cursor_image.get_height() // 2))
+            aim_cursor_image = pygame.transform.scale(aim_cursor_image, (
+            aim_cursor_image.get_width() // 2, aim_cursor_image.get_height() // 2))
 
             self.walk_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "dirt_run.wav"))
             self.walk_sound.set_volume(self.volume)
@@ -528,33 +541,32 @@ class MainScreen:
             self.shot_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "shot.wav"))
             self.shot_sound.set_volume(0.1)
 
-            sprite_sheet = None
-            try:
-                sprite_sheet = pygame.image.load(os.path.join(data_dir, "russian_shoot.png")).convert_alpha()
-            except pygame.error as e:
-                print(f"Error loading sprite sheet: {e}")
+            # Load character-specific image
+            character_image_name = {
+                "Немецкий медик": "medic_common.png",
+                "Военный Нигерии": "niger_common.png",
+                "Русский военный": "test.png"
+            }.get(self.selected_character.name)
 
-            sprite_width = 64
-            sprite_height = 64
-            num_frames = 2
+            if character_image_name is None:
+                raise ValueError(f"Image not found for character: {self.selected_character.name}")
 
-            shoot_animation = []
-            if sprite_sheet:
-                for i in range(num_frames):
-                    frame = sprite_sheet.subsurface(pygame.Rect(i * sprite_width, 0, sprite_width, sprite_height))
-                    frame = pygame.transform.scale(frame, (frame.get_width() // 2, frame.get_height() // 2))
-                    shoot_animation.append(frame)
+            test_image = pygame.image.load(os.path.join(data_dir, character_image_name)).convert_alpha()
+            test_image = pygame.transform.scale(test_image, (test_image.get_width() // 2, test_image.get_height() // 2))
+
+            # Initialize test_y AFTER loading test_image
+            test_y = self.height - test_image.get_height() - 28
 
             self.aim_cursor, self.aim_cursor_rect = create_cursor(aim_cursor_image)
             if self.aim_cursor is None:
                 pygame.mouse.set_visible(True)
 
-        except pygame.error as e:
+        except (pygame.error, ValueError, FileNotFoundError) as e:
             print(f"Error loading resources: {e}")
-            return
+            return  # Return to prevent further execution if loading fails
 
+        # Game variables
         test_x = self.test_x
-        test_y = self.height - test_image.get_height() - 28
         test_speed = 3
         flipped_image = self.flipped_image
         keys_pressed = {pygame.K_a: False, pygame.K_d: False}
@@ -566,16 +578,15 @@ class MainScreen:
         reload_start_time = 0
         shooting = False
         shot_start_time = 0
-        animation_start_time = 0
-        animation_duration = 250
 
+        # Main game loop
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                if event.type == pygame.KEYDOWN:
+                elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                         self.menu_opened_from_shooting_range = True
@@ -600,27 +611,24 @@ class MainScreen:
                         ammo -= 1
                         shooting = True
                         shot_start_time = pygame.time.get_ticks()
-                        animation_start_time = pygame.time.get_ticks()
                         if self.shot_sound:
                             self.shot_sound.play()
 
+            # Reload handling
             if reloading:
-                if pygame.time.get_ticks() - reload_start_time >= 2000:  # 2 секунды перезарядки
+                if pygame.time.get_ticks() - reload_start_time >= 2000:
                     ammo = 10
                     reloading = False
 
-            if shooting:
-                if pygame.time.get_ticks() - shot_start_time >= 500:
-                    shooting = False
-
+            # Character movement handling
             if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_a]:
                 if not walk_sound_playing and self.walk_sound:
                     self.walk_sound.play(-1)
-                    walk_sound_playing = True
+                walk_sound_playing = True
             else:
                 if walk_sound_playing and self.walk_sound:
                     self.walk_sound.stop()
-                    walk_sound_playing = False
+                walk_sound_playing = False
 
             if keys_pressed[pygame.K_d]:
                 test_x += test_speed
@@ -631,40 +639,32 @@ class MainScreen:
 
             test_x = max(0, min(test_x, self.width - test_image.get_width()))
 
-            displayed_image = pygame.transform.flip(test_image, True, False) if flipped_image else test_image
-
-            patron_x = test_x + test_image.get_width() // 2 - patron_image.get_width() // 2 - 32
-            patron_y = test_y - patron_image.get_height() + 55
-
+            # Drawing
             self.screen.fill(BLACK)
-
             if shooting_range_image:
                 self.screen.blit(shooting_range_image, (0, 0))
 
+            displayed_image = pygame.transform.flip(test_image, flipped_image, False)
             self.screen.blit(displayed_image, (test_x, test_y))
-
-            if shooting and shoot_animation:
-                elapsed_time = pygame.time.get_ticks() - animation_start_time
-                animation_frame = min(len(shoot_animation) - 1, elapsed_time // animation_duration)
-                self.screen.blit(shoot_animation[animation_frame], (test_x, test_y))
-                if elapsed_time >= len(shoot_animation) * animation_duration:
-                    shooting = False
 
             if target_image:
                 self.screen.blit(target_image, (target_x, target_y))
 
             if patron_image:
+                patron_x = test_x + test_image.get_width() // 2 - patron_image.get_width() // 2 - 32
+                patron_y = test_y - patron_image.get_height() + 55
                 self.screen.blit(patron_image, (patron_x, patron_y))
                 font = pygame.font.SysFont(None, 36)
                 ammo_text = font.render(str(ammo), True, WHITE)
-                text_rect = ammo_text.get_rect(center=(patron_x + patron_image.get_width() // 2,
-                                                        patron_y + patron_image.get_height() // 2 - 10))
+                text_rect = ammo_text.get_rect(
+                    center=(patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
                 self.screen.blit(ammo_text, text_rect)
 
-            if self.aim_cursor and self.aim_cursor_rect and target_image.get_rect(topleft=(target_x, target_y)).collidepoint(pygame.mouse.get_pos()):
+            if self.aim_cursor and self.aim_cursor_rect and target_image.get_rect(
+                    topleft=(target_x, target_y)).collidepoint(pygame.mouse.get_pos()):
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                self.screen.blit(self.aim_cursor, (mouse_x - self.aim_cursor_rect.width // 2,
-                                                    mouse_y - self.aim_cursor_rect.height // 2))
+                self.screen.blit(self.aim_cursor, (
+                mouse_x - self.aim_cursor_rect.width // 2, mouse_y - self.aim_cursor_rect.height // 2))
             else:
                 pygame.mouse.set_visible(True)
 
@@ -673,7 +673,7 @@ class MainScreen:
             self.test_x = test_x
             self.flipped_image = flipped_image
 
-# Функция для отображения меню настроек
+    # Функция для отображения меню настроек
     def show_settings_menu(self):
         running = True
         self.dragging_slider = False
@@ -762,6 +762,7 @@ def main():
     mainscreen.run()
     pygame.quit()
     sys.exit()
+
 
 if __name__ == "__main__":
     main()
