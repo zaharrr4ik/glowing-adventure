@@ -4,7 +4,35 @@ import os
 import sys
 import time
 
-from main import characters
+class Character:
+    def __init__(self, name, image_name, bright_image_name, speed):
+        # name: Имя персонажа (строка).
+        self.name = name
+        # image_name: Имя файла с изображением персонажа (строка).
+        self.image_name = image_name
+        # bright_image_name: Имя файла с подсвеченным изображением персонажа (строка).
+        self.bright_image_name = bright_image_name
+        # speed: Скорость передвижения персонажа (число).
+        self.speed = speed
+        # image: Поверхность Pygame с изображением персонажа. Инициализируется в load_images().
+        self.image = None
+        # bright_image: Поверхность Pygame с подсвеченным изображением персонажа. Инициализируется в load_images().
+        self.bright_image = None
+        # rect: Прямоугольник, представляющий область, занимаемую изображением персонажа. Инициализируется в
+        # load_images().
+        self.rect = None
+        # highlighted: Флаг, указывающий, выделен ли персонаж.
+        self.highlighted = False
+
+
+# Создание списка персонажей:
+# Список объектов класса Character, представляющих доступных для выбора персонажей.
+characters = [
+    Character("Немецкий медик", "german_medic.png", "german_medic_bright.png", 5),
+    Character("Военный Нигерии", "nigerian_soldier.png", "nigerian_soldier_bright.png", 2),
+    Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
+]
+
 
 
 # Инициализация Pygame
