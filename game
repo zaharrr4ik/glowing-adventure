@@ -1,34 +1,9 @@
-# Импорт необходимых библиотек Pygame и других модулей Python.
 import pygame
 import random
 import os
 import sys
 import time
 
-# Инициализация Pygame:
-# pygame.init() инициализирует все модули Pygame, необходимые для работы с графикой, звуком и вводом.
-# pygame.mixer.init() инициализирует модуль mixer, ответственный за воспроизведение звука.
-pygame.init()
-pygame.mixer.init()
-
-# Определение констант:
-# FPS: количество кадров в секунду (скорость обновления экрана).
-FPS = 60
-# Цветовые константы в формате RGB (Red, Green, Blue):
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (50, 50, 50)
-YELLOW = (255, 255, 0)
-RED = (255, 0, 0)
-# Пути к директориям с данными (изображения) и звуками:
-data_dir = os.path.join(os.path.dirname(__file__), "data")  # Динамически определяем путь к папке "data"
-sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")  # Динамически определяем путь к папке "sounds"
-# Имя шрифта, используемого для отображения текста:
-GAME_FONT = "comicsansms"  # Можно изменить на другой системный шрифт
-
-
-# Класс Character:
-# Представляет персонажа в игре. Хранит имя, пути к изображениям (обычное и выделенное), и скорость.
 class Character:
     def __init__(self, name, image_name, bright_image_name, speed):
         # name: Имя персонажа (строка).
@@ -43,7 +18,7 @@ class Character:
         self.image = None
         # bright_image: Поверхность Pygame с подсвеченным изображением персонажа. Инициализируется в load_images().
         self.bright_image = None
-        # Rect: Прямоугольник, представляющий область, занимаемую изображением персонажа. Инициализируется в
+        # rect: Прямоугольник, представляющий область, занимаемую изображением персонажа. Инициализируется в
         # load_images().
         self.rect = None
         # highlighted: Флаг, указывающий, выделен ли персонаж.
@@ -59,104 +34,104 @@ characters = [
 ]
 
 
-# Функция для отрисовки текста на экране с эффектом размытия (для улучшения визуального восприятия):
-def draw_pixel_text(surface, text, font_size, x, y, color, font=GAME_FONT):
-    # Создаем объект шрифта с указанным именем и размером.
+
+# Инициализация Pygame
+def initialize_pygame():
+    pygame.init()
+    pygame.mixer.init()
+
+# Определение констант
+def define_constants():
+    global FPS, WHITE, BLACK, GRAY, YELLOW, RED, data_dir, sounds_dir, GAME_FONT
+    FPS = 60
+    WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
+    GRAY = (50, 50, 50)
+    YELLOW = (255, 255, 0)
+    RED = (255, 0, 0)
+    data_dir = os.path.join(os.path.dirname(__file__), "data")
+    sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
+    GAME_FONT = "comicsansms"
+
+# Класс Character
+class Character:
+    def __init__(self, name, image_name, bright_image_name, speed):
+        self.name = name
+        self.image_name = image_name
+        self.bright_image_name = bright_image_name
+        self.speed = speed
+        self.image = None
+        self.bright_image = None
+        self.rect = None
+        self.highlighted = False
+
+# Создание списка персонажей
+def create_characters():
+    return [
+        Character("Немецкий медик", "german_medic.png", "german_medic_bright.png", 5),
+        Character("Военный Нигерии", "nigerian_soldier.png", "nigerian_soldier_bright.png", 2),
+        Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
+    ]
+
+# Функция для отрисовки текста
+def draw_pixel_text(surface, text, font_size, x, y, color, font):
     font = pygame.font.SysFont(font, font_size)
-    # Рендерим текст, создавая поверхность с текстом.
     text_surface = font.render(text, True, color)
-    # Получаем прямоугольник, охватывающий текст.
     text_rect = text_surface.get_rect(center=(x, y))
-    # Масштабируем поверхность дважды (для размытия) и уменьшаем обратно до исходного размера.
-    blurred_surface = pygame.transform.scale(text_surface,
-                                             (text_surface.get_width() * 2, text_surface.get_height() * 2))
+    blurred_surface = pygame.transform.scale(text_surface, (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
-    # Отображаем размытый текст на указанной поверхности.
     surface.blit(blurred_surface, text_rect)
 
-
-# Функция для создания и обработки текстового поля ввода:
+# Функция для создания текстового поля ввода
 def input_box(screen, message, width, height, stars):
-    # Создаем объект шрифта размером 36.
     font = pygame.font.Font(None, 36)
-    # Создаем прямоугольник для поля ввода.
     input_rect = pygame.Rect((width - 600) // 2, (height - 50) // 2, 600, 50)
-    # Цвета для активного и неактивного состояния поля ввода.
     color_active = pygame.Color('lightskyblue3')
     color_passive = pygame.Color('chartreuse4')
-    # Флаг, указывающий, активно ли поле ввода.
     active = False
-    # Введенный текст.
     text = ''
-    # Флаг, управляющий циклом ввода.
     running = True
-    # Цикл обработки событий поля ввода:
     while running:
-        # Обрабатываем события.
         for event in pygame.event.get():
-            # Закрытие окна.
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-            # Нажатие мыши.
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # Если клик внутри прямоугольника, поле ввода становится активным.
-                if input_rect.collidepoint(event.pos):
-                    active = True
-                else:
-                    active = False
-            # Нажатие клавиш.
+                active = input_rect.collidepoint(event.pos)
             if event.type == pygame.KEYDOWN:
-                # Только если поле ввода активно.
                 if active:
-                    # Enter: завершаем ввод.
                     if event.key == pygame.K_RETURN:
                         running = False
-                    # Backspace: удаляем последний символ.
                     elif event.key == pygame.K_BACKSPACE:
                         text = text[:-1]
-                    # Другие клавиши: добавляем символ к тексту.
                     else:
                         text += event.unicode
 
-        # Отрисовка фона, звезд, сообщения и поля ввода.
         screen.fill(BLACK)
         for star in stars:
             pygame.draw.circle(screen, WHITE, (star[0], star[1]), star[2])
         draw_pixel_text(screen, message, 48, width // 2, input_rect.top - 50, WHITE, font=GAME_FONT)
-        # Устанавливаем цвет поля ввода в зависимости от состояния.
         color = color_active if active else color_passive
-        # Отрисовываем прямоугольник поля ввода.
         pygame.draw.rect(screen, color, input_rect, 2)
-        # Рендерим и отображаем введенный текст.
         text_surface = font.render(text, True, color)
         screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 5))
-        # Обновляем экран.
         pygame.display.flip()
-    # Возвращаем введенный текст.
     return text
 
-
-# Класс MainScreen:
-# Управляет основным экраном игры, включая меню и игровую сцену.
+# Функция для масштабирования изображения
 def scale_image(image, scale_factor):
-    # Вычисляем новые размеры изображения.
     new_width = int(image.get_width() * scale_factor)
     new_height = int(image.get_height() * scale_factor)
-    # Масштабируем изображение и возвращаем результат.
     return pygame.transform.scale(image, (new_width, new_height))
 
-
+# Функция для создания курсора
 def create_cursor(cursor_image):
-    """Creates a Pygame cursor from an image. Handles potential errors."""
     try:
-        # Проверяем, загружено ли изображение.
         if cursor_image is None:
             print("Warning: Cursor image not loaded correctly.")
             return None, None
-
         cursor_rect = cursor_image.get_rect()
-        return cursor_image, cursor_rect  # Возвращаем поверхность и прямоугольник
+        return cursor_image, cursor_rect
     except AttributeError as e:
         print(f"Error getting cursor rect: {e}")
         return None, None
@@ -164,10 +139,9 @@ def create_cursor(cursor_image):
         print(f"An unexpected error occurred in create_cursor: {e}")
         return None, None
 
-
+# Класс MainScreen
 class MainScreen:
     def __init__(self, width, height):
-        # Ширина и высота экрана.
         self.volume_slider_rect = None
         self.settings_buttons = None
         self.aim_cursor_rect = None
@@ -179,49 +153,30 @@ class MainScreen:
         self.character_images = None
         self.width = width
         self.height = height
-        # Создаем игровое окно.
         self.screen = pygame.display.set_mode((self.width, self.height))
-        # Список звезд для фона.
         self.stars = []
-        # Генерируем звезды.
         self.generate_stars(200)
-        # Загружаем изображения.
         self.load_images()
-        # Имя игрока (инициализируется позже).
         self.player_name = ""
-        # Выбранный персонаж (инициализируется позже).
         self.selected_character = None
-        # Объект шрифта для отрисовки текста.
         self.font = pygame.font.SysFont(None, 64)
-        # Список прямоугольников кнопок в меню.
         self.buttons = []
-        # Громкость звуковых эффектов.
         self.volume = 0.5
-        # Флаг для управления перетаскиванием ползунка громкости.
-        self.dragging_slider = False
-        # Загрузка звуков.
-        self.load_sounds()
-        # Позиции и параметры персонажа на экране стрельбища.
-        self.test_x = 0
-        self.test_y = 0
-        self.flipped_image = False
-        # Флаг, указывающий, открыто ли меню из стрельбища.
         self.menu_opened_from_shooting_range = False
-        # Прежние параметры персонажа, перед переходом в меню из стрельбища.
         self.previous_test_x = 0
         self.previous_test_y = 0
         self.previous_flipped_image = False
+        self.test_x = 0
+        self.test_y = 0
+        self.flipped_image = False
 
-    # Основная функция, запускающая игровой цикл:
     def run(self):
-        draw_pixel_text(self.screen, "Сквозь Миры", 150, self.width // 2, self.height // 3, YELLOW,
-                        font=GAME_FONT)
+        draw_pixel_text(self.screen, "Сквозь Миры", 150, self.width // 2, self.height // 3, YELLOW, font=GAME_FONT)
         pygame.display.flip()
         time.sleep(3)
         self.screen.fill(BLACK)
-        self.show_story()  # Показать вступительный ролик
-        self.show_menu_screen()  # Отобразить главное меню после вступления
-
+        self.show_story()
+        self.show_menu_screen()
         running = True
         while running:
             for event in pygame.event.get():
@@ -236,17 +191,16 @@ class MainScreen:
                     elif event.key == pygame.K_SPACE and self.selected_character is None:
                         self.choose_character()
 
-            if self.selected_character:  # Показывать полигон стрельбы, только если выбран персонаж
+            if self.selected_character:
                 self.show_shooting_range()
-            self.draw()  # Отрисовка игровых элементов
+            self.draw()
             pygame.display.flip()
 
         pygame.quit()
         sys.exit()
 
-    # Функция для отрисовки меню:
     def draw_menu_screen(self):
-        self.screen.fill(BLACK)  # Очистка экрана
+        self.screen.fill(BLACK)
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
@@ -278,71 +232,53 @@ class MainScreen:
 
         pygame.display.flip()
 
-    # Функция для генерации звезд на экране:
     def generate_stars(self, num_stars):
-        # Создаем num_stars случайных звезд.
         for _ in range(num_stars):
-            # Случайные координаты и размер звезды.
             x = random.randint(0, self.width)
             y = random.randint(0, self.height)
             size = random.randint(1, 3)
-            # Добавляем звезду в список.
             self.stars.append([x, y, size])
 
-    # Функция для отрисовки элементов на экране:
     def draw(self):
-        # Заливаем экран черным цветом.
         self.screen.fill(BLACK)
-        # Отрисовываем звезды.
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-        # Отрисовываем заголовок игры.
         draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width // 2, 100, WHITE, font=GAME_FONT)
-        # Если выбран персонаж, отображаем информацию о нем.
         if self.selected_character:
             draw_pixel_text(self.screen,
-                            f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
-                            48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
+                f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
+                48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
 
-    # Функция для загрузки изображений персонажей:
     def load_images(self):
-        # Список для хранения поверхностей с изображениями персонажей.
         self.character_images = []
-        # Перебираем данные о персонажах.
         for char_data in characters:
             try:
-                # Загружаем обычное и подсвеченное изображения персонажа.
                 image = pygame.image.load(os.path.join(data_dir, char_data.image_name)).convert_alpha()
                 bright_image = pygame.image.load(os.path.join(data_dir, char_data.bright_image_name)).convert_alpha()
-                # Масштабируем изображения.
                 image = scale_image(image, 0.6)
                 bright_image = scale_image(bright_image, 0.6)
-                # Добавляем изображения в список.
-                self.character_images.append(image)
-                # Сохраняем изображения и прямоугольник в объекте персонажа.
-                char_data.image = image
-                char_data.bright_image = bright_image
-                char_data.rect = image.get_rect()
+
+                # Проверка на успешную загрузку обоих изображений
+                if image and bright_image:
+                    self.character_images.append(image)
+                    char_data.image = image
+                    char_data.bright_image = bright_image
+                    char_data.rect = image.get_rect()
+                else:
+                    print(f"Error loading images for {char_data.name}. Skipping character.")
+
             except pygame.error as e:
-                # Обработка ошибок загрузки изображений.
-                print(f"Error loading image {char_data.image_name}: {e}")
-                self.character_images.append(None)
+                print(f"Error loading images for {char_data.name}: {e}. Skipping character.")
 
-    # Функция для изменения размера изображения:
-
-    # Функция для загрузки звуков:
     def load_sounds(self):
         try:
-            # Загрузка звука для нажатия кнопки.
             self.click_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "button_click.wav"))
-            self.click_sound.set_volume(0.2)  # Установка громкости
+            self.click_sound.set_volume(0.2)
         except pygame.error as e:
             print(f"Error loading sound file: {e}")
             self.click_sound = None
 
-    # Функция для отображения вступительной истории:
     def show_story(self):
-        # Текст истории, разбитый на строки.
         story_text = [
             "В далеком будущем...",
             "Миры соединяются с помощью таинственных порталов.",
@@ -355,48 +291,30 @@ class MainScreen:
             "Приготовьтесь к битве за выживание.",
             "Время действовать настало!"
         ]
-        # Создаем объект шрифта.
         font = pygame.font.SysFont(None, 64)
-        # Начальное смещение по вертикали для текста.
         y_offset = 200
-        # Создаем поверхности с текстом для каждой строки.
         text_surfaces = [font.render(line, True, YELLOW) for line in story_text]
-        # Вычисляем вертикальные позиции для каждой строки текста.
         y_positions = [y_offset + i * 70 for i in range(len(text_surfaces))]
-        # Скорость прокрутки текста.
         scroll_speed = 1
-        # Флаг, указывающий, что все строки вышли за пределы экрана.
         all_lines_offscreen = False
-        # Флаг для пропуска истории.
         skip_story = False
-        # Флаг, управляющий циклом показа истории.
         running = True
-        # Создаем объект для управления временем.
         clock = pygame.time.Clock()
 
-        # Цикл отображения истории:
         while running and not all_lines_offscreen:
-            # Обработка событий.
             for event in pygame.event.get():
-                # Закрытие окна.
                 if event.type == pygame.QUIT:
                     running = False
-                # Нажатие клавиши.
                 if event.type == pygame.KEYDOWN:
-                    # Пропуск истории по нажатию пробела.
                     if event.key == pygame.K_SPACE:
                         skip_story = True
                         break
-
-            # Пропуск истории.
             if skip_story:
                 break
 
-            # Очистка экрана и отрисовка звезд.
             self.screen.fill(BLACK)
             for star in self.stars:
                 pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
-            # Отрисовка видимых строк текста.
             visible_text = []
             for i, text_surface in enumerate(text_surfaces):
                 y_positions[i] -= scroll_speed
@@ -404,49 +322,37 @@ class MainScreen:
                     text_rect = text_surface.get_rect(center=(self.width // 2, y_positions[i]))
                     self.screen.blit(text_surface, text_rect)
                     visible_text.append(text_surface)
-            # Проверка, вышли ли все строки за пределы экрана.
+
             all_lines_offscreen = all(
                 y_positions[i] + text_surfaces[i].get_height() <= 0 for i in range(len(text_surfaces)))
-            # Обновление экрана.
+
             pygame.display.flip()
-            # Управление скоростью обновления экрана.
             clock.tick(30)
 
-    # Функция для отображения главного меню:
     def show_menu_screen(self):
-        # Флаг, управляющий циклом меню.
         menu_running = True
-        # Сбрасываем флаг открытия меню из стрельбища.
         self.menu_opened_from_shooting_range = False
-        # Сохраняем предыдущие координаты персонажа перед переходом в меню.
+        self.test_x = 0
+        self.test_y = 0
+        self.flipped_image = False
         if self.selected_character:
             self.previous_test_x = self.test_x
             self.previous_test_y = self.test_y
             self.previous_flipped_image = self.flipped_image
 
-        # Цикл обработки событий меню:
         while menu_running:
-            # Отрисовываем меню.
             self.draw_menu_screen()
-            # Обрабатываем события.
             for event in pygame.event.get():
-                # Закрытие окна.
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                # Нажатие клавиши Escape.
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        menu_running = False
-                # Нажатие мыши.
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    menu_running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    # Обработка нажатия на кнопки меню.
                     for i, rect in enumerate(self.buttons):
                         if rect.collidepoint(event.pos):
-                            # Воспроизведение звука нажатия кнопки.
                             if self.click_sound:
                                 self.click_sound.play()
-                            # Обработка нажатия на разные кнопки меню.
                             if i == 0:
                                 self.choose_character()
                             elif i == 1:
@@ -460,43 +366,33 @@ class MainScreen:
                             elif i == 4:
                                 self.show_exit_menu()  # Не реализованно
 
-    # Функция для выбора персонажа:
-    # Функция для отображения меню выхода из игры:
+    # Функция для отображения меню выхода из игры
     def show_exit_menu(self):
-        # Создаем объекты шрифтов для заголовка и кнопок.
         font_title = pygame.font.SysFont(GAME_FONT, 100)
         font_button = pygame.font.SysFont(GAME_FONT, 72)
-        # Ширина и высота кнопок.
         button_width = 300
         button_height = 120
         button_spacing = 80
 
-        # Создаем прямоугольники для кнопок "Выйти" и "Остаться".
         button1_rect = pygame.Rect((self.width - button_width) // 2,
-                                   (self.height // 2) - button_height - button_spacing // 2, button_width,
-                                   button_height)
+                                    (self.height // 2) - button_height - button_spacing // 2, button_width,
+                                    button_height)
         button2_rect = pygame.Rect((self.width - button_width) // 2, (self.height // 2) + button_spacing // 2,
-                                   button_width, button_height)
+                                    button_width, button_height)
 
-        # Флаг, контролирующий отображение меню выхода.
         exit_menu = True
         while exit_menu:
             for event in pygame.event.get():
-                # Обработка события закрытия окна.
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     quit()
-                # Обработка нажатия мыши.
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    # Если нажатие на кнопку "Выйти", закрываем игру.
                     if button1_rect.collidepoint(event.pos):
                         pygame.quit()
                         quit()
-                    # Если нажатие на кнопку "Остаться", закрываем меню.
                     if button2_rect.collidepoint(event.pos):
                         exit_menu = False
 
-            # Отрисовка фона, звезд и текста в меню.
             self.screen.fill(BLACK)
             for star in self.stars:
                 pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
@@ -505,94 +401,75 @@ class MainScreen:
             title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
             self.screen.blit(title_text, title_rect)
 
-            # Отрисовка кнопки "Выйти".
             pygame.draw.rect(self.screen, (80, 80, 200), button1_rect)
             button1_text = font_button.render("Выйти", True, WHITE)
             button1_text_rect = button1_text.get_rect(center=button1_rect.center)
             self.screen.blit(button1_text, button1_text_rect)
 
-            # Отрисовка кнопки "Остаться".
             pygame.draw.rect(self.screen, (80, 80, 200), button2_rect)
             button2_text = font_button.render("Остаться", True, WHITE)
             button2_text_rect = button2_text.get_rect(center=button2_rect.center)
             self.screen.blit(button2_text, button2_text_rect)
 
-            # Обновление экрана.
             pygame.display.flip()
 
     def choose_character(self):
-        # Выбранный персонаж (изначально не выбран).
         selected_character = None
-        # Флаг, указывающий, что кнопка подтверждения нажата.
         confirm_button_pressed = False
-        # Цикл выбора персонажа:
+
         while not confirm_button_pressed:
-            # Обработка событий.
             for event in pygame.event.get():
-                # Закрытие окна.
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                # Нажатие мыши.
+
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    # Проверка нажатия на изображение персонажа.
                     for i, char in enumerate(characters):
                         if self.character_images[i] and char.rect and char.rect.collidepoint(event.pos):
-                            # Выделяем выбранного персонажа.
                             selected_character = char
                             char.highlighted = True
                             for other_char in characters:
                                 if other_char != char:
                                     other_char.highlighted = False
-                            break
-                # Нажатие на кнопку "Подтвердить".
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                            # Устанавливаем количество пуль в зависимости от выбранного персонажа
+                            if selected_character.name == "Немецкий медик":
+                                self.ammo = 5  # 5 пуль для Немецкого медика
+                            else:
+                                self.ammo = 10  # 10 пуль для остальных персонажей
+
                     button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
-                    if button_rect.collidepoint(event.pos) and selected_character:
+                    if button_rect.collidepoint(event.pos) and selected_character is not None:
                         confirm_button_pressed = True
 
-            # Отрисовка экрана выбора персонажа.
             self.draw_choose_character_screen()
-            # Если кнопка подтверждения нажата и персонаж выбран.
-            if confirm_button_pressed and selected_character:
-                # Открытие поля ввода имени персонажа.
-                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
-                # Сохраняем выбранного персонажа.
-                self.selected_character = selected_character
-                # Показ вступительного ролика для персонажа.
-                self.show_character_intro(selected_character)
-        # Возвращаем выбранного персонажа.
-        return selected_character
 
-    # Функция для отрисовки экрана выбора персонажа:
+            if confirm_button_pressed and selected_character:
+                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
+                self.selected_character = selected_character
+                self.show_character_intro(selected_character)
+                return selected_character
+
     def draw_choose_character_screen(self):
-        # Очищаем экран и рисуем звезды.
         self.screen.fill(BLACK)
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
-        # Отрисовка изображений персонажей:
         if self.character_images:
             try:
-                # Определение индекса и высоты изображения "Русский военный" для выравнивания по высоте.
                 russian_soldier_index = characters.index(
                     next(char for char in characters if char.name == "Русский военный"))
                 russian_soldier_image = self.character_images[russian_soldier_index]
-                russian_soldier_image.get_width()
-                russian_soldier_image.get_height()
             except (StopIteration, ValueError, IndexError):
                 print("Error: 'Русский военный' not found or images not loaded properly.")
                 return
 
-            spacing = 25
+            spacing = 40
             total_width = sum(img.get_width() for img in self.character_images) + (len(characters) - 1) * spacing
             x_offset = max(0, (self.width - total_width) // 2)
 
-            # Цикл отрисовки изображений персонажей:
             for i, char in enumerate(characters):
                 if self.character_images[i]:
                     try:
-                        # Определение индекса и высоты изображения "Русский военный" для выравнивания по высоте.
                         russian_soldier_index = characters.index(
                             next(c for c in characters if c.name == "Русский военный"))
                         base_height = self.character_images[russian_soldier_index].get_height()
@@ -604,28 +481,23 @@ class MainScreen:
                     aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
                     new_width = int(target_height * aspect_ratio)
 
-                    # Масштабирование изображений для выравнивания по высоте:
                     scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
-                    scaled_bright_image = pygame.transform.scale(characters[i].bright_image,
-                                                                 (new_width, target_height))
+                    scaled_bright_image = pygame.transform.scale(characters[i].bright_image, (new_width, target_height))
 
                     x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
                     char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
-                    # Отрисовка изображения персонажа (подсвеченное, если выделен):
                     self.screen.blit(scaled_bright_image if char.highlighted else scaled_image, char.rect)
 
-        # Отрисовка кнопки "Подтвердить":
-        button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
-        pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
-        font = pygame.font.SysFont(None, 48)
-        text = font.render("Подтвердить", True, WHITE)
-        text_rect = text.get_rect(center=button_rect.center)
-        self.screen.blit(text, text_rect)
-        pygame.display.flip()
+            # Изменение координаты y для кнопки "Подтвердить" на 220 пикселей ниже (150 + 70 + 50)
+            button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 220, 300, 80)
+            pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
+            font = pygame.font.SysFont(None, 48)
+            text = font.render("Подтвердить", True, WHITE)
+            text_rect = text.get_rect(center=button_rect.center)
+            self.screen.blit(text, text_rect)
+            pygame.display.flip()
 
-    # Функция для показа вступительного ролика персонажа:
     def show_character_intro(self, selected_character):
-        # Словарь с текстами введения для каждого персонажа.
         intro_texts = {
             "Немецкий медик": [
                 "Вы — опытный немецкий военный медик, оказавшийся втянутым в нечто большее, чем мог представить.",
@@ -645,7 +517,6 @@ class MainScreen:
             ],
         }
 
-        # Попытка загрузить фоновое изображение для введения.
         try:
             intro_background = pygame.image.load(os.path.join(data_dir, "intro_background.png")).convert()
             intro_background = pygame.transform.scale(intro_background, (self.width, self.height))
@@ -653,55 +524,43 @@ class MainScreen:
             print(f"Error loading intro background: {e}")
             intro_background = None
 
-        # Создаем объект шрифта для отображения текста введения.
         font = pygame.font.SysFont(None, 48)
-        DARK_GRAY = (50, 50, 50)  # Цвет текста
-        y_offset = 100  # Начальная вертикальная позиция текста
-        # Создаем поверхности для текста введения, изменяя цвет.
+        DARK_GRAY = (50, 50, 50)
+        y_offset = 100
         text_surfaces = [font.render(line, True, DARK_GRAY) for line in intro_texts.get(selected_character.name, [])]
         y_positions = [y_offset + i * 70 for i in range(len(text_surfaces))]
         clock = pygame.time.Clock()
 
-        # Цикл для отображения текста введения:
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                # Закрытие введения по нажатию любой клавиши.
                 if event.type == pygame.KEYDOWN:
                     running = False
 
-            # Отрисовка фона или черного цвета, если фона нет.
             if intro_background:
                 self.screen.blit(intro_background, (0, 0))
             else:
                 self.screen.fill(BLACK)
 
-            # Отрисовка текста введения.
             for i, text_surface in enumerate(text_surfaces):
                 text_rect = text_surface.get_rect(center=(self.width // 2, y_positions[i]))
                 self.screen.blit(text_surface, text_rect)
 
-            # Обновление экрана.
             pygame.display.flip()
-            clock.tick(30)  # Ограничение по частоте кадров
+            clock.tick(30)
 
-        # Очистка экрана после введения и переход к интерфейсу стрельбища.
         self.screen.fill(BLACK)
-        self.show_shooting_range()  # Приглашение на стрельбище
+        self.show_shooting_range()
 
-    # Функция для отображения полигон стрельбы:
     def show_shooting_range(self):
-        """Displays the shooting range game screen with shooting animation."""
+        """Displays the shooting range game screen without shooting animation."""
         try:
-            # Загрузка изображений для стрельбища.
+            # Load resources
             shooting_range_image = pygame.image.load(os.path.join(data_dir, "poligon.png")).convert()
             shooting_range_image = pygame.transform.scale(shooting_range_image, (self.width, self.height))
-            test_image = pygame.image.load(os.path.join(data_dir, "test.png")).convert_alpha()
-            test_image = pygame.transform.scale(test_image,
-                                                   (test_image.get_width() // 2, test_image.get_height() // 2))
             target_image = pygame.image.load(os.path.join(data_dir, "target.png")).convert_alpha()
             target_image = pygame.transform.scale(target_image,
                                                   (target_image.get_width() // 2, target_image.get_height() // 2))
@@ -712,7 +571,6 @@ class MainScreen:
             aim_cursor_image = pygame.transform.scale(aim_cursor_image, (
                 aim_cursor_image.get_width() // 2, aim_cursor_image.get_height() // 2))
 
-            # Загрузка звуковых эффектов.
             self.walk_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "dirt_run.wav"))
             self.walk_sound.set_volume(self.volume)
             self.reload_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "reload.wav"))
@@ -720,54 +578,47 @@ class MainScreen:
             self.shot_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "shot.wav"))
             self.shot_sound.set_volume(0.1)
 
-            # Загрузка спрайтов для анимации стрельбы:
-            sprite_sheet = None
-            try:
-                sprite_sheet = pygame.image.load(os.path.join(data_dir, "russian_shoot.png")).convert_alpha()
-            except pygame.error as e:
-                print(f"Error loading sprite sheet: {e}")
+            # Load character-specific image
+            character_image_name = {
+                "Немецкий медик": "medic_common.png",  # Используем medic_common для Немецкого медика
+                "Военный Нигерии": "niger_common.png",
+                "Русский военный": "test.png"
+            }.get(self.selected_character.name)
 
-            # Настройка параметров спрайт-листа.
-            sprite_width = 64
-            sprite_height = 64
-            num_frames = 2  # Количество кадров анимации
+            if character_image_name is None:
+                raise ValueError(f"Image not found for character: {self.selected_character.name}")
 
-            # Извлечение кадров из спрайт-листа.
-            shoot_animation = []
-            if sprite_sheet:
-                for i in range(num_frames):
-                    frame = sprite_sheet.subsurface(pygame.Rect(i * sprite_width, 0, sprite_width, sprite_height))
-                    frame = pygame.transform.scale(frame, (frame.get_width() // 2, frame.get_height() // 2))
-                    shoot_animation.append(frame)
+            test_image = pygame.image.load(os.path.join(data_dir, character_image_name)).convert_alpha()
+            test_image = pygame.transform.scale(test_image, (test_image.get_width() // 2, test_image.get_height() // 2))
 
-            # Настройка курсора.
+            # Initialize test_y AFTER loading test_image
+            test_y = self.height - test_image.get_height() - 28
+
             self.aim_cursor, self.aim_cursor_rect = create_cursor(aim_cursor_image)
             if self.aim_cursor is None:
                 pygame.mouse.set_visible(True)
 
-        except pygame.error as e:
+        except (pygame.error, ValueError, FileNotFoundError) as e:
             print(f"Error loading resources: {e}")
-            return
+            return  # Return to prevent further execution if loading fails
 
-        # Переменные игры для управления персонажем и стрельбой.
+        # Game variables
         test_x = self.test_x
-        test_y = self.height - test_image.get_height() - 28
         test_speed = 3
         flipped_image = self.flipped_image
         keys_pressed = {pygame.K_a: False, pygame.K_d: False}
         walk_sound_playing = False
         target_x = self.width - target_image.get_width() - 50
         target_y = self.height - target_image.get_height() - 30
-        ammo = 10
+        ammo = self.ammo  # Используем self.ammo, установленное в choose_character
         reloading = False
         reload_start_time = 0
         shooting = False
         shot_start_time = 0
-        animation_start_time = 0
-        animation_duration = 250
 
-        # Основной цикл игры на стрельбище:
+        # Main game loop
         running = True
+        start_time = pygame.time.get_ticks()  # Record start time
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -798,31 +649,24 @@ class MainScreen:
                         ammo -= 1
                         shooting = True
                         shot_start_time = pygame.time.get_ticks()
-                        animation_start_time = pygame.time.get_ticks()
                         if self.shot_sound:
                             self.shot_sound.play()
 
-            # Обработка перезарядки.
+            # Reload handling
             if reloading:
-                if pygame.time.get_ticks() - reload_start_time >= 2000:  # 2 секунды перезарядки
-                    ammo = 10
+                if pygame.time.get_ticks() - reload_start_time >= 2000:
+                    ammo = 10 if self.selected_character.name != "Немецкий медик" else 5  # Восстанавливаем пули в зависимости от персонажа
                     reloading = False
 
-            # Обработка анимации стрельбы.
-            if shooting:
-                if pygame.time.get_ticks() - shot_start_time >= 500:
-                    shooting = False
-
-            # Обработка движений персонажа.
-            # Воспроизводим звук шагов, если персонаж движется.
+            # Character movement handling
             if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_a]:
                 if not walk_sound_playing and self.walk_sound:
                     self.walk_sound.play(-1)
-                    walk_sound_playing = True
+                walk_sound_playing = True
             else:
                 if walk_sound_playing and self.walk_sound:
                     self.walk_sound.stop()
-                    walk_sound_playing = False
+                walk_sound_playing = False
 
             if keys_pressed[pygame.K_d]:
                 test_x += test_speed
@@ -831,47 +675,29 @@ class MainScreen:
                 test_x -= test_speed
                 flipped_image = True
 
-            # Ограничение перемещения персонажа в пределах экрана.
             test_x = max(0, min(test_x, self.width - test_image.get_width()))
 
-            # Отображение изображения персонажа на экране.
-            displayed_image = pygame.transform.flip(test_image, True, False) if flipped_image else test_image
-
-            # Определяем координаты для пули:
-            patron_x = test_x + test_image.get_width() // 2 - patron_image.get_width() // 2 - 32
-            patron_y = test_y - patron_image.get_height() + 55
-
-            # Очистка экрана перед отрисовкой нового кадра.
-            self.screen.fill(BLACK)  # Добавьте соответствующий вызов перед отрисовкой нового кадра
-
+            # Drawing
+            self.screen.fill(BLACK)
             if shooting_range_image:
                 self.screen.blit(shooting_range_image, (0, 0))
 
-            # Отрисовка персонажа.
+            displayed_image = pygame.transform.flip(test_image, flipped_image, False)
             self.screen.blit(displayed_image, (test_x, test_y))
 
-            # Если персонаж стреляет, отрисовываем анимацию стрельбы.
-            if shooting and shoot_animation:
-                elapsed_time = pygame.time.get_ticks() - animation_start_time
-                animation_frame = min(len(shoot_animation) - 1, elapsed_time // animation_duration)
-                self.screen.blit(shoot_animation[animation_frame], (test_x, test_y))  # Показываем анимацию
-                if elapsed_time >= len(shoot_animation) * animation_duration:
-                    shooting = False
-
-            # Отрисовка мишени.
             if target_image:
                 self.screen.blit(target_image, (target_x, target_y))
 
-            # Отрисовка пули.
             if patron_image:
+                patron_x = test_x + test_image.get_width() // 2 - patron_image.get_width() // 2 - 32
+                patron_y = test_y - patron_image.get_height() + 55
                 self.screen.blit(patron_image, (patron_x, patron_y))
-            font = pygame.font.SysFont(None, 36)
-            ammo_text = font.render(str(ammo), True, WHITE)
-            text_rect = ammo_text.get_rect(center=(patron_x + patron_image.get_width() // 2,
-                                                   patron_y + patron_image.get_height() // 2 - 10))
-            self.screen.blit(ammo_text, text_rect)
+                font = pygame.font.SysFont(None, 36)
+                ammo_text = font.render(str(ammo), True, WHITE)
+                text_rect = ammo_text.get_rect(
+                    center=(patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
+                self.screen.blit(ammo_text, text_rect)
 
-            # Отображение курсора при наведении на мишень.
             if self.aim_cursor and self.aim_cursor_rect and target_image.get_rect(
                     topleft=(target_x, target_y)).collidepoint(pygame.mouse.get_pos()):
                 mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -880,22 +706,51 @@ class MainScreen:
             else:
                 pygame.mouse.set_visible(True)
 
-            # Обновление экрана.
             pygame.display.flip()
+            elapsed_time = pygame.time.get_ticks() - start_time
+            if elapsed_time >= 5000:  # Check if 20 seconds have passed
+                self.show_manga()
+                running = False  # Exit the loop after showing manga
 
-            # Сохранение данных персонажа для повторного использования.
-            self.test_x = test_x
-            self.flipped_image = flipped_image
+        self.test_x = test_x
+        self.flipped_image = flipped_image
 
-    # Функция для создания курсора за пределами изображения:
-
-    # Функция для отображения меню настроек:
-    def show_settings_menu(self):
+    def show_manga(self):
+        manga_images = ["manga_radio.png", "manga_portal.png", "manga_car.png", "manga_start.png"]
+        current_image_index = 0
         running = True
-        self.dragging_slider = False  # Добавлена переменная для отслеживания перетаскивания
 
         while running:
-            self.screen.fill(BLACK)  # Очистка экрана для меню настроек
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    current_image_index += 1
+                    if current_image_index >= len(manga_images):  # Check boundary condition
+                        current_image_index = 0  # Loop back to the beginning
+                        running = False  # Exit the loop after all images are displayed
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    running = False
+
+            try:
+                image_path = os.path.join(data_dir, "manga", manga_images[current_image_index])
+                image = pygame.image.load(image_path).convert_alpha()
+                image = pygame.transform.scale(image, (self.width, self.height))
+                self.screen.blit(image, (0, 0))
+                pygame.display.flip()
+            except pygame.error as e:
+                print(f"Error loading manga image: {e}")
+                running = False  # Exit if an image can't be loaded
+
+        self.show_game_map()
+
+    def show_settings_menu(self):
+        running = True
+        self.dragging_slider = False
+
+        while running:
+            self.screen.fill(BLACK)
             for star in self.stars:
                 pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
             title_font = pygame.font.SysFont(GAME_FONT, 100)
@@ -903,17 +758,14 @@ class MainScreen:
             title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
             self.screen.blit(title_text, title_rect)
 
-            # Ширина и высота кнопок меню
             button_width = self.width // 5
             button_height = 60
             button_x = self.width // 2 - button_width // 2
             button_y_spacing = 30
 
-            # Определение кнопок в меню
             button_texts = ["Назад", "Применить"]
             self.settings_buttons = []
 
-            # Отрисовка кнопок:
             for i, text in enumerate(button_texts):
                 button_y = title_rect.bottom + 50 + i * (button_height + button_y_spacing)
                 button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
@@ -924,7 +776,6 @@ class MainScreen:
                 self.screen.blit(button_text, button_text_rect)
                 self.settings_buttons.append(button_rect)
 
-            # Ползунок громкости
             slider_width = 300
             slider_height = 40
             slider_x = self.width // 2 - slider_width // 2
@@ -933,7 +784,6 @@ class MainScreen:
             self.volume_slider_rect = pygame.Rect(slider_x, slider_y, slider_width, slider_height)
             pygame.draw.rect(self.screen, GRAY, self.volume_slider_rect, border_radius=10)
 
-            # Отрисовка "ползунка" на ползунке громкости:
             thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
             thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
             pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
@@ -942,7 +792,6 @@ class MainScreen:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -950,42 +799,82 @@ class MainScreen:
                         if rect.collidepoint(event.pos):
                             if self.click_sound:
                                 self.click_sound.play()
-                            if i == 0:  # Кнопка "Назад"
+                            if i == 0:
                                 running = False
-                            elif i == 1:  # Кнопка "Применить"
-                                pass  # Здесь может быть обработка применения настроек
-
-                    # Проверка, попадает ли курсор на ползунок громкости.
+                            elif i == 1:
+                                pass
                     if self.volume_slider_rect.collidepoint(event.pos):
-                        self.dragging_slider = True  # Начало перетаскивания
-                        self.adjust_volume(event)  # Регулировка громкости
-
+                        self.dragging_slider = True
+                        self.adjust_volume(event)
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    self.dragging_slider = False  # Конец перетаскивания
+                    self.dragging_slider = False
                 elif event.type == pygame.MOUSEMOTION:
                     if self.dragging_slider:
-                        self.adjust_volume(event)  # Регулировка громкости при перемещении мыши
+                        self.adjust_volume(event)
 
-            thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
-            thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
-            pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
-            pygame.display.flip()
+                thumb_x = slider_x + int(self.volume * slider_width) - slider_height // 2
+                thumb_rect = pygame.Rect(thumb_x, slider_y, slider_height, slider_height)
+                pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
+                pygame.display.flip()
 
-    # Функция для регулировки громкости на основе положения мыши:
     def adjust_volume(self, event):
         slider_width = self.volume_slider_rect.width
         mouse_x = event.pos[0]
-        # Регулируем громкость в диапазоне от 0 до 1.
         self.volume = max(0, min(1, (mouse_x - self.volume_slider_rect.left) / slider_width))
         if self.click_sound:
             self.click_sound.set_volume(self.volume)
 
+    def draw_map(self, map_file="pole"):
+        try:
+            with open(os.path.join(data_dir, map_file), "r") as f:
+                map_data = f.read().splitlines()
+        except FileNotFoundError:
+            print(f"Error: Map file '{map_file}' not found.")
+            return
 
-# Конец класса MainScreen.
+        cell_size = 300
+        image1 = pygame.image.load(os.path.join(data_dir, "piksel.png")).convert()
+        image2 = pygame.image.load(os.path.join(data_dir, "piksel2.png")).convert()
+        image1 = pygame.transform.scale(image1, (cell_size, cell_size))
+        image2 = pygame.transform.scale(image2, (cell_size, cell_size))
 
-# Создание главного экрана и запуск игры.
-infoObject = pygame.display.Info()  # Получаем данные о дисплее (размеры экрана).
-mainscreen = MainScreen(infoObject.current_w, infoObject.current_h)  # Создаем объект главного экрана.
-mainscreen.run()  # Запускаем основную игру.
-pygame.quit()  # Завершение работы Pygame.
-sys.exit()  # Завершение программы.
+        for row_index, row in enumerate(map_data):
+            for col_index, cell_type in enumerate(row):
+                x = col_index * cell_size
+                y = row_index * cell_size
+                if cell_type == '#':
+                    self.screen.blit(image1, (x, y))
+                elif cell_type == '*':
+                    self.screen.blit(image2, (x, y))
+                else:
+                    print(f"Warning: Unknown cell type '{cell_type}' in map data.")
+
+    def show_game_map(self):
+        running = True
+        while running:
+            self.screen.fill(BLACK)  # Clear the screen
+            self.draw_map()  # Draw the map
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+
+            pygame.display.flip()
+
+
+# Основной код
+def main():
+    initialize_pygame()
+    define_constants()
+    infoObject = pygame.display.Info()
+    mainscreen = MainScreen(infoObject.current_w, infoObject.current_h)
+    mainscreen.run()
+    pygame.quit()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    main()
