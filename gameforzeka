@@ -609,6 +609,7 @@ class MainScreen:
 
         # Main game loop
         running = True
+        start_time = pygame.time.get_ticks()  # Record start time
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -697,11 +698,46 @@ class MainScreen:
                 pygame.mouse.set_visible(True)
 
             pygame.display.flip()
+            elapsed_time = pygame.time.get_ticks() - start_time
+            if elapsed_time >= 5000:  # Check if 20 seconds have passed
+                self.show_manga()
+                running = False  # Exit the loop after showing manga
 
-            self.test_x = test_x
-            self.flipped_image = flipped_image
+        self.test_x = test_x
+        self.flipped_image = flipped_image
 
     # Функция для отображения меню настроек
+
+    def show_manga(self):
+        manga_images = ["manga_radio.png", "manga_portal.png", "manga_car.png", "manga_start.png"]
+        current_image_index = 0
+        running = True
+
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    current_image_index += 1
+                    if current_image_index >= len(manga_images):  # Check boundary condition
+                        current_image_index = 0  # Loop back to the beginning
+                        running = False  # Exit the loop after all images are displayed
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    running = False
+
+            try:
+                image_path = os.path.join(data_dir, "manga", manga_images[current_image_index])
+                image = pygame.image.load(image_path).convert_alpha()
+                image = pygame.transform.scale(image, (self.width, self.height))
+                self.screen.blit(image, (0, 0))
+                pygame.display.flip()
+            except pygame.error as e:
+                print(f"Error loading manga image: {e}")
+                running = False  # Exit if an image can't be loaded
+
+        self.show_game_map()
+
     def show_settings_menu(self):
         running = True
         self.dragging_slider = False
@@ -780,6 +816,47 @@ class MainScreen:
         self.volume = max(0, min(1, (mouse_x - self.volume_slider_rect.left) / slider_width))
         if self.click_sound:
             self.click_sound.set_volume(self.volume)
+
+    def draw_map(self, map_file="pole"):
+        try:
+            with open(os.path.join(data_dir, map_file), "r") as f:
+                map_data = f.read().splitlines()
+        except FileNotFoundError:
+            print(f"Error: Map file '{map_file}' not found.")
+            return
+
+        cell_size = 300
+        image1 = pygame.image.load(os.path.join(data_dir, "piksel.png")).convert()
+        image2 = pygame.image.load(os.path.join(data_dir, "piksel2.png")).convert()
+        image1 = pygame.transform.scale(image1, (cell_size, cell_size))
+        image2 = pygame.transform.scale(image2, (cell_size, cell_size))
+
+        for row_index, row in enumerate(map_data):
+            for col_index, cell_type in enumerate(row):
+                x = col_index * cell_size
+                y = row_index * cell_size
+                if cell_type == '#':
+                    self.screen.blit(image1, (x, y))
+                elif cell_type == '*':
+                    self.screen.blit(image2, (x, y))
+                else:
+                    print(f"Warning: Unknown cell type '{cell_type}' in map data.")
+
+    def show_game_map(self):
+        running = True
+        while running:
+            self.screen.fill(BLACK)  # Clear the screen
+            self.draw_map()  # Draw the map
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+
+            pygame.display.flip()
+
 
 # Основной код
 def main():
