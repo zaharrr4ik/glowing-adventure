@@ -422,6 +422,7 @@ class MainScreen:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, char in enumerate(characters):
                         if self.character_images[i] and char.rect and char.rect.collidepoint(event.pos):
@@ -430,13 +431,18 @@ class MainScreen:
                             for other_char in characters:
                                 if other_char != char:
                                     other_char.highlighted = False
-                            break
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                            # Устанавливаем количество пуль в зависимости от выбранного персонажа
+                            if selected_character.name == "Немецкий медик":
+                                self.ammo = 5  # 5 пуль для Немецкого медика
+                            else:
+                                self.ammo = 10  # 10 пуль для остальных персонажей
+
                     button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
-                    if button_rect.collidepoint(event.pos) and selected_character:
+                    if button_rect.collidepoint(event.pos) and selected_character is not None:
                         confirm_button_pressed = True
 
             self.draw_choose_character_screen()
+
             if confirm_button_pressed and selected_character:
                 self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
                 self.selected_character = selected_character
@@ -450,7 +456,8 @@ class MainScreen:
 
         if self.character_images:
             try:
-                russian_soldier_index = characters.index(next(char for char in characters if char.name == "Русский военный"))
+                russian_soldier_index = characters.index(
+                    next(char for char in characters if char.name == "Русский военный"))
                 russian_soldier_image = self.character_images[russian_soldier_index]
             except (StopIteration, ValueError, IndexError):
                 print("Error: 'Русский военный' not found or images not loaded properly.")
@@ -463,7 +470,8 @@ class MainScreen:
             for i, char in enumerate(characters):
                 if self.character_images[i]:
                     try:
-                        russian_soldier_index = characters.index(next(c for c in characters if c.name == "Русский военный"))
+                        russian_soldier_index = characters.index(
+                            next(c for c in characters if c.name == "Русский военный"))
                         base_height = self.character_images[russian_soldier_index].get_height()
                     except (StopIteration, ValueError, IndexError):
                         print("Error: 'Русский военный' not found or images not loaded properly.")
@@ -480,7 +488,8 @@ class MainScreen:
                     char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
                     self.screen.blit(scaled_bright_image if char.highlighted else scaled_image, char.rect)
 
-            button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 100, 300, 80)
+            # Изменение координаты y для кнопки "Подтвердить" на 70 пикселей ниже (50 + 20)
+            button_rect = pygame.Rect(self.width // 2 - 150, self.height // 2 + 150 + 170, 300, 80)
             pygame.draw.rect(self.screen, (80, 80, 200), button_rect, border_radius=20)
             font = pygame.font.SysFont(None, 48)
             text = font.render("Подтвердить", True, WHITE)
@@ -560,7 +569,7 @@ class MainScreen:
                                                   (patron_image.get_width() // 2, patron_image.get_height() // 2))
             aim_cursor_image = pygame.image.load(os.path.join(data_dir, "aim.png")).convert_alpha()
             aim_cursor_image = pygame.transform.scale(aim_cursor_image, (
-            aim_cursor_image.get_width() // 2, aim_cursor_image.get_height() // 2))
+                aim_cursor_image.get_width() // 2, aim_cursor_image.get_height() // 2))
 
             self.walk_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "dirt_run.wav"))
             self.walk_sound.set_volume(self.volume)
@@ -571,7 +580,7 @@ class MainScreen:
 
             # Load character-specific image
             character_image_name = {
-                "Немецкий медик": "medic_common.png",
+                "Немецкий медик": "medic_common.png",  # Используем medic_common для Немецкого медика
                 "Военный Нигерии": "niger_common.png",
                 "Русский военный": "test.png"
             }.get(self.selected_character.name)
@@ -601,7 +610,7 @@ class MainScreen:
         walk_sound_playing = False
         target_x = self.width - target_image.get_width() - 50
         target_y = self.height - target_image.get_height() - 30
-        ammo = 10
+        ammo = self.ammo  # Используем self.ammo, установленное в choose_character
         reloading = False
         reload_start_time = 0
         shooting = False
@@ -646,7 +655,7 @@ class MainScreen:
             # Reload handling
             if reloading:
                 if pygame.time.get_ticks() - reload_start_time >= 2000:
-                    ammo = 10
+                    ammo = 10 if self.selected_character.name != "Немецкий медик" else 5  # Восстанавливаем пули в зависимости от персонажа
                     reloading = False
 
             # Character movement handling
@@ -693,7 +702,7 @@ class MainScreen:
                     topleft=(target_x, target_y)).collidepoint(pygame.mouse.get_pos()):
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 self.screen.blit(self.aim_cursor, (
-                mouse_x - self.aim_cursor_rect.width // 2, mouse_y - self.aim_cursor_rect.height // 2))
+                    mouse_x - self.aim_cursor_rect.width // 2, mouse_y - self.aim_cursor_rect.height // 2))
             else:
                 pygame.mouse.set_visible(True)
 
@@ -705,8 +714,6 @@ class MainScreen:
 
         self.test_x = test_x
         self.flipped_image = flipped_image
-
-    # Функция для отображения меню настроек
 
     def show_manga(self):
         manga_images = ["manga_radio.png", "manga_portal.png", "manga_car.png", "manga_start.png"]
