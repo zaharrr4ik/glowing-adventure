@@ -295,13 +295,10 @@ class MainScreen:
         try:
             self.click_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "button_click.wav"))
             self.click_sound.set_volume(0.2)  # Устанавливаем громкость звука
-            self.sword_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "sword.wav"))  # Звук удара мечом
-            self.sword_sound.set_volume(0.5)
-            print("Sounds loaded successfully.")  # Отладочное сообщение
+            print("Button click sound loaded successfully.")  # Отладочное сообщение
         except pygame.error as e:
-            print(f"Error loading sound files: {e}")
+            print(f"Error loading sound file: {e}")
             self.click_sound = None  # Если звук не загружен, устанавливаем значение None
-            self.sword_sound = None
 
     def show_story(self):
         story_text = [
@@ -355,10 +352,10 @@ class MainScreen:
             clock.tick(30)
 
     def show_menu_screen(self):
-        # Останавливаем звук ходьбы, если он играет
-        if self.walk_sound and self.walk_sound.get_num_channels() > 0:
-            self.walk_sound.stop()
+        # Восстановление видимости курсора
+        pygame.mouse.set_visible(True)
 
+        # Остальной код меню
         menu_running = True
         self.menu_opened_from_shooting_range = False
         self.test_x = 0
@@ -380,22 +377,20 @@ class MainScreen:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(self.buttons):
                         if rect.collidepoint(event.pos):
-                            if self.click_sound:  # Проверяем, загружен ли звук
-                                self.click_sound.play()  # Воспроизводим звук
+                            if self.click_sound:
+                                self.click_sound.play()
                             if i == 0:
                                 self.choose_character()
                             elif i == 1:
                                 menu_running = False
                                 if self.saved_game_state == "game_map":
-                                    # Возвращаемся в игру с сохраненной позицией героя
                                     self.show_game_map(self.selected_character)
                                 elif self.saved_game_state == "shooting_range":
-                                    # Возвращаемся в полигон
                                     self.show_shooting_range()
                             elif i == 3:
-                                self.show_settings_menu()  # Не реализовано
+                                self.show_settings_menu()
                             elif i == 4:
-                                self.show_exit_menu()  # Не реализовано
+                                self.show_exit_menu()
 
     # Функция для отображения меню выхода из игры
     def show_exit_menu(self):
@@ -916,113 +911,138 @@ class MainScreen:
             print(f"Error: Map file '{map_file}' not found.")
             return
 
-        cell_size = 140  # Фиксированный размер клетки
+        cell_size = 140  # Размер клетки
         image1 = pygame.image.load(os.path.join(data_dir, "piksel.png")).convert()
         image2 = pygame.image.load(os.path.join(data_dir, "piksel2.png")).convert()
         image1 = pygame.transform.scale(image1, (cell_size, cell_size))
         image2 = pygame.transform.scale(image2, (cell_size, cell_size))
 
-        # Закрашиваем весь экран серым цветом
-        gray_surface = pygame.Surface((self.width, self.height))
-        gray_surface.fill((100, 100, 100))  # Серый цвет
-        self.screen.blit(gray_surface, (0, 0))
+        # Очистка экрана
+        self.screen.fill((100, 100, 100))  # Серый цвет фона
 
-        # Определяем границы видимой области
-        visible_left = max(0, hero_pos[0] - 3)  # 3 клетки слева от героя
-        visible_right = min(len(map_data[0]), hero_pos[0] + 4)  # 3 клетки справа от героя
-        visible_top = max(0, hero_pos[1] - 2)  # 2 клетки сверху от героя
-        visible_bottom = min(len(map_data), hero_pos[1] + 3)  # 2 клетки снизу от героя
-
+        # Отрисовка карты
         for row_index, row in enumerate(map_data):
             for col_index, cell_type in enumerate(row):
                 x = col_index * cell_size + (camera.dx if camera else 0)
                 y = row_index * cell_size + (camera.dy if camera else 0)
-
-                # Проверяем, находится ли клетка в видимой области
-                if visible_left <= col_index < visible_right and visible_top <= row_index < visible_bottom:
-                    if cell_type == '#':  # Проходимая клетка (piksel.png)
-                        self.screen.blit(image1, (x, y))
-                    elif cell_type == '*':  # Непроходимая стена (piksel2.png)
-                        self.screen.blit(image2, (x, y))
-                    elif cell_type == '@':  # Начальная позиция героя
-                        self.screen.blit(image1, (x, y))
-                        if (col_index, row_index) == hero_pos and hero_image:
-                            self.screen.blit(hero_image, (x, y))
+                if cell_type == '#':  # Проходимая клетка
+                    self.screen.blit(image1, (x, y))
+                elif cell_type == '*':  # Непроходимая стена
+                    self.screen.blit(image2, (x, y))
+                elif cell_type == '@':  # Начальная позиция героя
+                    self.screen.blit(image1, (x, y))
+                    if (col_index, row_index) == hero_pos and hero_image:
+                        self.screen.blit(hero_image, (x, y))
 
     def show_game_map(self, selected_character):
         running = True
-        hero_pos = self.find_hero_initial_position()  # Найдем начальную позицию героя
+        hero_pos = self.find_hero_initial_position()
 
-        # Если есть сохраненная позиция, восстанавливаем её
         if self.saved_hero_pos:
             hero_pos = self.saved_hero_pos
-            self.saved_hero_pos = None  # Сбрасываем сохраненную позицию
+            self.saved_hero_pos = None
 
-        # Загружаем изображение выбранного персонажа
-        if selected_character.name == "Немецкий медик":
-            hero_image_name = "medic_common.png"
-        elif selected_character.name == "Военный Нигерии":
-            hero_image_name = "niger_common.png"
-        elif selected_character.name == "Русский военный":
-            hero_image_name = "test.png"
-        else:
-            hero_image_name = "default_hero.png"  # Запасное изображение, если персонаж не определен
+        # Загрузка изображения персонажа
+        character_image_name = {
+            "Немецкий медик": "medic_common.png",
+            "Военный Нигерии": "niger_common.png",
+            "Русский военный": "test.png"
+        }.get(selected_character.name, "default_hero.png")
 
         try:
-            hero_image = pygame.image.load(os.path.join(data_dir, hero_image_name)).convert_alpha()
-            cell_size = 140  # Фиксированный размер клетки
-            # Увеличиваем размер персонажа на 30%
+            hero_image = pygame.image.load(os.path.join(data_dir, character_image_name)).convert_alpha()
+            cell_size = 140
             hero_image = pygame.transform.scale(hero_image, (int(cell_size * 1.3), int(cell_size * 1.3)))
-            print(f"Hero image loaded: {hero_image_name}")  # Отладочное сообщение
         except pygame.error as e:
             print(f"Error loading hero image: {e}")
             return
 
-        # Создаем прямоугольник для героя
-        hero_rect = hero_image.get_rect(topleft=(hero_pos[0] * cell_size, hero_pos[1] * cell_size))
+        # Загрузка изображений врагов
+        enemy_images = {
+            1: pygame.image.load(os.path.join(data_dir, "location_1", "dragon_1.png")).convert_alpha(),
+            2: pygame.image.load(os.path.join(data_dir, "location_1", "dragon_2.png")).convert_alpha()
+        }
+        for key in enemy_images:
+            enemy_images[key] = pygame.transform.scale(enemy_images[key], (cell_size, cell_size))
+
+        # Инициализация врагов
+        enemies = []
+        fireballs = []
+        last_enemy_spawn_time = 0
+        enemy_spawn_interval = 3000  # 3 секунды
+        max_enemies = 10
 
         while running:
+            current_time = pygame.time.get_ticks()
+
+            # Обработка событий
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        # Сохраняем позицию героя и состояние игры
                         self.saved_hero_pos = hero_pos
                         self.saved_game_state = "game_map"
                         running = False
                         self.show_menu_screen()
-                    elif event.key == pygame.K_w:  # Вверх
+                    elif event.key == pygame.K_w:
                         hero_pos = self.move_hero(hero_pos, 0, -1)
-                    elif event.key == pygame.K_s:  # Вниз
+                    elif event.key == pygame.K_s:
                         hero_pos = self.move_hero(hero_pos, 0, 1)
-                    elif event.key == pygame.K_a:  # Влево
+                    elif event.key == pygame.K_a:
                         hero_pos = self.move_hero(hero_pos, -1, 0)
-                    elif event.key == pygame.K_d:  # Вправо
+                    elif event.key == pygame.K_d:
                         hero_pos = self.move_hero(hero_pos, 1, 0)
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
-                    if self.sword_sound:  # Проверяем, загружен ли звук
-                        self.sword_sound.play()  # Воспроизводим звук атаки
 
-            # Обновляем позицию героя
-            hero_rect.topleft = (hero_pos[0] * cell_size, hero_pos[1] * cell_size)
+            # Спавн врагов
+            if len(enemies) < max_enemies and current_time - last_enemy_spawn_time >= enemy_spawn_interval:
+                enemy_type = 1 if len([e for e in enemies if e.enemy_type == 1]) < 5 else 2
+                x, y = self.get_random_spawn_position()
+                enemies.append(Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 1))
+                last_enemy_spawn_time = current_time
 
-            # Обновляем камеру
-            self.camera.update(hero_rect)
+            # Обновление врагов
+            for enemy in enemies:
+                enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data())
+                enemy.attack(hero_pos[0], hero_pos[1], fireballs)
 
-            # Очищаем экран и перерисовываем карту с новой позицией героя
+            # Обновление огненных шаров
+            for fireball in fireballs:
+                fireball.update()
+                if fireball.collides_with_hero(hero_pos[0], hero_pos[1]):
+                    print("Герой получил урон от огненного шара!")
+                    fireballs.remove(fireball)
+
+            # Отрисовка карты, врагов и огненных шаров
             self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=self.camera)
+            for enemy in enemies:
+                self.screen.blit(enemy.image, (enemy.x * cell_size, enemy.y * cell_size))
+            for fireball in fireballs:
+                self.screen.blit(fireball.image, (fireball.x * cell_size, fireball.y * cell_size))
 
-            # Применяем сдвиг камеры к герою
-            hero_rect.x += self.camera.dx
-            hero_rect.y += self.camera.dy
-
-            # Рисуем героя на экране
-            # Сдвигаем персонажа вверх и влево, чтобы он оставался в центре клетки
-            self.screen.blit(hero_image, (hero_rect.x - cell_size * 0.15, hero_rect.y - cell_size * 0.15))
+            # Отрисовка героя
+            self.screen.blit(hero_image, (hero_pos[0] * cell_size, hero_pos[1] * cell_size))
 
             pygame.display.flip()
+
+    def get_random_spawn_position(self):
+        """Возвращает случайную позицию для спавна врага."""
+        map_data = self.load_map_data()
+        while True:
+            x = random.randint(0, len(map_data[0]) - 1)
+            y = random.randint(0, len(map_data) - 1)
+            if map_data[y][x] == '#':  # Проверяем, что клетка проходима
+                return x, y
+
+    def load_map_data(self):
+        """Загружает данные карты из файла."""
+        try:
+            with open(os.path.join(data_dir, "pole"), "r") as f:
+                return [line.strip() for line in f.readlines()]
+        except FileNotFoundError:
+            print("Error: Map file 'pole' not found.")
+            return []
 
     def find_hero_initial_position(self, map_file="pole"):
         try:
@@ -1039,6 +1059,7 @@ class MainScreen:
         return (0, 0)  # Если символ '@' не найден, возвращаем (0, 0)
 
     def move_hero(self, hero_pos, dx, dy):
+        """Перемещает героя на (dx, dy) клеток, если это возможно."""
         new_x = hero_pos[0] + dx
         new_y = hero_pos[1] + dy
 
@@ -1047,16 +1068,85 @@ class MainScreen:
                 map_data = f.read().splitlines()
         except FileNotFoundError:
             print("Error: Map file 'pole' not found.")
-            return hero_pos  # Если файл не найден, возвращаем старую позицию
+            return hero_pos
 
-        # Проверяем, что новая позиция находится в пределах карты
+        # Проверяем, что новая позиция находится в пределах карты и проходима
         if 0 <= new_x < len(map_data[0]) and 0 <= new_y < len(map_data):
-            # Получаем тип клетки, на которую пытаемся переместиться
-            cell_type = map_data[new_y][new_x]
-            # Герой может перемещаться только на клетки с '#' (piksel.png)
-            if cell_type == '#':
-                return (new_x, new_y)  # Возвращаем новую позицию
+            if map_data[new_y][new_x] == '#':  # Клетка проходима
+                return (new_x, new_y)
         return hero_pos  # Если движение невозможно, возвращаем старую позицию
+
+
+
+class Enemy:
+    def __init__(self, x, y, enemy_type, image, attack_range, attack_interval, speed):
+        self.x = x  # Координата X на карте
+        self.y = y  # Координата Y на карте
+        self.enemy_type = enemy_type  # Тип врага (1 - ближний бой, 2 - дальний бой)
+        self.image = image  # Изображение врага
+        self.attack_range = attack_range  # Дистанция атаки (1 или 2 клетки)
+        self.attack_interval = attack_interval  # Интервал атаки (1 или 2 секунды)
+        self.speed = speed  # Скорость движения (1 клетка в секунду)
+        self.last_attack_time = 0  # Время последней атаки
+        self.last_move_time = 0  # Время последнего движения
+
+    def move_towards_hero(self, hero_x, hero_y, map_data):
+        """Двигается к герою, если это возможно."""
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_move_time >= 1000:  # Движение каждую секунду
+            dx = hero_x - self.x
+            dy = hero_y - self.y
+            if abs(dx) > abs(dy):
+                if dx > 0 and self.can_move(self.x + 1, self.y, map_data):
+                    self.x += 1
+                elif dx < 0 and self.can_move(self.x - 1, self.y, map_data):
+                    self.x -= 1
+            else:
+                if dy > 0 and self.can_move(self.x, self.y + 1, map_data):
+                    self.y += 1
+                elif dy < 0 and self.can_move(self.x, self.y - 1, map_data):
+                    self.y -= 1
+            self.last_move_time = current_time
+
+    def can_move(self, x, y, map_data):
+        """Проверяет, может ли враг переместиться на клетку (x, y)."""
+        if 0 <= x < len(map_data[0]) and 0 <= y < len(map_data):
+            return map_data[y][x] == '#'
+        return False
+
+    def attack(self, hero_x, hero_y, fireballs):
+        """Атакует героя, если он в зоне досягаемости."""
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_attack_time >= self.attack_interval * 1000:
+            distance = abs(self.x - hero_x) + abs(self.y - hero_y)
+            if distance <= self.attack_range:
+                if self.enemy_type == 2:  # Дальний бой
+                    fireballs.append(Fireball(self.x, self.y, hero_x, hero_y))
+                self.last_attack_time = current_time
+
+
+class Fireball:
+    def __init__(self, start_x, start_y, target_x, target_y):
+        self.x = start_x  # Начальная позиция X
+        self.y = start_y  # Начальная позиция Y
+        self.target_x = target_x  # Целевая позиция X
+        self.target_y = target_y  # Целевая позиция Y
+        self.speed = 2  # Скорость движения (2 клетки в секунду)
+        self.image = pygame.image.load(os.path.join(data_dir, "location_1", "ball.png")).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (40, 40))  # Масштабирование изображения
+
+    def update(self):
+        """Обновляет позицию огненного шара."""
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        distance = max(abs(dx), abs(dy))
+        if distance > 0:
+            self.x += (dx / distance) * self.speed
+            self.y += (dy / distance) * self.speed
+
+    def collides_with_hero(self, hero_x, hero_y):
+        """Проверяет, попал ли огненный шар в героя."""
+        return abs(self.x - hero_x) < 1 and abs(self.y - hero_y) < 1
 
 
 
