@@ -1018,6 +1018,13 @@ class MainScreen:
         reload_start_time = 0
         reload_duration = 2000  # 2 секунды на перезарядку
 
+        # Время последнего удара монстра
+        last_enemy_attack_time = 0
+        enemy_attack_interval = 1000  # 1 секунда между ударами
+
+        # Желтые точки от попаданий
+        bullet_data = []  # Список для хранения данных о пулях: (x, y, время появления)
+
         while running:
             current_time = pygame.time.get_ticks()
 
@@ -1048,8 +1055,12 @@ class MainScreen:
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
                     if self.ammo > 0 and not reloading:
                         self.ammo -= 1
-                        # Проверяем, попал ли выстрел во врага
+                        if self.shot_sound:
+                            self.shot_sound.play()  # Звук стрельбы
+                        # Добавляем позицию выстрела и время появления
                         mouse_x, mouse_y = pygame.mouse.get_pos()
+                        bullet_data.append((mouse_x, mouse_y, current_time))
+                        # Проверяем, попал ли выстрел во врага
                         for enemy in enemies:
                             enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
                                                      cell_size, cell_size)
@@ -1080,12 +1091,18 @@ class MainScreen:
                 enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(), enemies, hero_pos, self)
                 enemy.attack(hero_pos[0], hero_pos[1], fireballs)
 
-                # Проверяем, атаковал ли враг игрока
+                # Проверяем, находится ли враг рядом с игроком
                 if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
-                    player_health -= 1  # Уменьшаем здоровье игрока
-                    if player_health <= 0:
-                        print("Игрок погиб!")
-                        running = False
+                    if current_time - last_enemy_attack_time >= enemy_attack_interval:
+                        player_health -= 1  # Уменьшаем здоровье игрока на 1 сердечко
+                        last_enemy_attack_time = current_time
+                        if player_health <= 0:
+                            print("Игрок погиб!")
+                            running = False
+
+            # Удаляем пули, которые существуют больше 3 секунд
+            bullet_data = [(x, y, spawn_time) for (x, y, spawn_time) in bullet_data if
+                           current_time - spawn_time <= 3000]
 
             # Отрисовка карты, врагов и огненных шаров
             self.screen.fill((100, 100, 100))  # Очистка экрана
@@ -1126,6 +1143,10 @@ class MainScreen:
                     heart_y = self.height - 80
                     self.screen.blit(heart_image, (heart_x, heart_y))
 
+            # Отрисовка желтых точек от попаданий
+            for bullet in bullet_data:
+                pygame.draw.circle(self.screen, YELLOW, (bullet[0], bullet[1]), 5)
+
             # Получаем позицию курсора мыши
             mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -1146,7 +1167,7 @@ class MainScreen:
                 pygame.mouse.set_visible(True)
 
             pygame.display.flip()
-
+            
     def get_random_spawn_position(self, enemies, hero_pos):
         """Возвращает случайную позицию для спавна врага, которая не занята."""
         map_data = self.load_map_data()
