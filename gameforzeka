@@ -1057,21 +1057,26 @@ class MainScreen:
         max_attempts = 100  # Максимальное количество попыток для поиска свободной клетки
         for _ in range(max_attempts):
             y = random.randint(0, len(map_data) - 1)  # Генерация y в пределах высоты карты
+
+            # Проверяем, что строка карты не пустая
+            if not map_data[y]:
+                continue
+
             x = random.randint(0, len(map_data[y]) - 1)  # Генерация x в пределах длины строки y
 
             # Проверяем, что клетка проходима и не занята
             if map_data[y][x] == '#' and not self.is_cell_occupied(x, y, enemies, hero_pos):
                 return x, y
 
-        # Если свободная клетка не найдена, возвращаем начальную позицию
-        print("Failed to find a valid spawn position.")
-        return 0, 0
 
     def load_map_data(self):
         """Загружает данные карты из файла."""
         try:
             with open(os.path.join(data_dir, "pole"), "r") as f:
-                return [line.strip() for line in f.readlines()]
+                map_data = [line.strip() for line in f.readlines() if line.strip()]  # Игнорируем пустые строки
+                if not map_data:
+                    print("Error: Map file 'pole' is empty.")
+                return map_data
         except FileNotFoundError:
             print("Error: Map file 'pole' not found.")
             return []
@@ -1095,21 +1100,24 @@ class MainScreen:
         new_x = hero_pos[0] + dx
         new_y = hero_pos[1] + dy
 
-        try:
-            with open(os.path.join(data_dir, "pole"), "r") as f:
-                map_data = f.read().splitlines()
-        except FileNotFoundError:
-            print("Error: Map file 'pole' not found.")
+        map_data = self.load_map_data()
+        if not map_data:
+            print("Error: Map data is empty.")
             return hero_pos
 
         # Проверяем, что новая позиция находится в пределах карты и проходима
         if 0 <= new_x < len(map_data[0]) and 0 <= new_y < len(map_data):
             if map_data[new_y][new_x] in ('#', '~'):  # Клетка проходима
                 return (new_x, new_y)
-        return hero_pos  # Если движение невозможно, возвращаем старую позициюa
+        return hero_pos  # Если движение невозможно, возвращаем старую позицию
 
     def is_cell_occupied(self, x, y, enemies, hero_pos):
         """Проверяет, занята ли клетка (x, y) врагами или героем."""
+        map_data = self.load_map_data()
+        if not map_data:
+            print("Error: Map data is empty.")
+            return True
+
         # Проверяем, не находится ли герой в этой клетке
         if (x, y) == hero_pos:
             return True
