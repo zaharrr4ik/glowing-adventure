@@ -969,12 +969,27 @@ class MainScreen:
             print(f"Error loading hero image: {e}")
             return
 
+        # Загрузка изображения патронов
+        try:
+            patron_image = pygame.image.load(os.path.join(data_dir, "patron.png")).convert_alpha()
+            patron_image = pygame.transform.scale(patron_image, (50, 50))  # Масштабируем изображение патронов
+        except pygame.error as e:
+            print(f"Error loading patron image: {e}")
+            patron_image = None
+
         # Загрузка изображений врагов
         enemy_images = {
             1: pygame.image.load(os.path.join(data_dir, "location_1", "dragon_1.png")).convert_alpha(),
         }
         for key in enemy_images:
             enemy_images[key] = pygame.transform.scale(enemy_images[key], (cell_size, cell_size))
+
+        # Загрузка изображения сердца
+        heart_image = pygame.image.load(os.path.join(data_dir, "heart.png")).convert_alpha()
+        heart_image = pygame.transform.scale(heart_image, (30, 30))  # Масштабируем сердечко
+
+        # Здоровье игрока (10 сердечек)
+        player_health = 10
 
         # Инициализация врагов
         enemies = []
@@ -985,6 +1000,10 @@ class MainScreen:
 
         # Инициализация камеры
         camera = Camera(self.width, self.height)
+
+        # Загрузка изображения прицела
+        aim_cursor_image = pygame.image.load(os.path.join(data_dir, "aim.png")).convert_alpha()
+        aim_cursor_image = pygame.transform.scale(aim_cursor_image, (40, 40))
 
         while running:
             current_time = pygame.time.get_ticks()
@@ -1008,16 +1027,28 @@ class MainScreen:
                         hero_pos = self.move_hero(hero_pos, -1, 0)
                     elif event.key == pygame.K_d:
                         hero_pos = self.move_hero(hero_pos, 1, 0)
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
+                    if self.ammo > 0:
+                        self.ammo -= 1
+                        # Проверяем, попал ли выстрел во врага
+                        mouse_x, mouse_y = pygame.mouse.get_pos()
+                        for enemy in enemies:
+                            enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
+                                                     cell_size, cell_size)
+                            if enemy_rect.collidepoint(mouse_x, mouse_y):
+                                enemy.health -= 1  # Уменьшаем здоровье врага
+                                if enemy.health <= 0:
+                                    enemies.remove(enemy)  # Удаляем врага, если здоровье закончилось
+                                break
 
             # Обновление камеры
             camera.update(hero_pos)
 
-            # Спавн врагов (только тип 1 - ближний бой)
+            # Спавн врагов
             if len(enemies) < max_enemies and current_time - last_enemy_spawn_time >= enemy_spawn_interval:
                 enemy_type = 1  # Только ближний бой
                 x, y = self.get_random_spawn_position(enemies, hero_pos)
-                enemies.append(Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type,
-                                     0.5))  # Скорость уменьшена
+                enemies.append(Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5))
                 last_enemy_spawn_time = current_time
 
             # Обновление врагов
@@ -1025,25 +1056,61 @@ class MainScreen:
                 enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(), enemies, hero_pos, self)
                 enemy.attack(hero_pos[0], hero_pos[1], fireballs)
 
-            # Обновление огненных шаров
-            for fireball in fireballs:
-                fireball.update()
-                if fireball.collides_with_hero(hero_pos[0], hero_pos[1]):
-                    print("Герой получил урон от огненного шара!")
-                    fireballs.remove(fireball)
+                # Проверяем, атаковал ли враг игрока
+                if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
+                    player_health -= 1  # Уменьшаем здоровье игрока
+                    if player_health <= 0:
+                        print("Игрок погиб!")
+                        running = False
 
             # Отрисовка карты, врагов и огненных шаров
             self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
             for enemy in enemies:
-                self.screen.blit(enemy.image, (enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy))
-            for fireball in fireballs:
-                self.screen.blit(fireball.image,
-                                 (fireball.x * cell_size + camera.dx, fireball.y * cell_size + camera.dy))
+                enemy_x = enemy.x * cell_size + camera.dx
+                enemy_y = enemy.y * cell_size + camera.dy
+                self.screen.blit(enemy.image, (enemy_x, enemy_y))
 
-            # Отрисовка героя
-            hero_x = self.width // 2 - hero_image.get_width() // 2
-            hero_y = self.height // 2 - hero_image.get_height() // 2
-            self.screen.blit(hero_image, (hero_x, hero_y))
+                # Отрисовка здоровья врага (3 сердечка)
+                for i in range(enemy.health):
+                    heart_x = enemy_x + i * 20
+                    heart_y = enemy_y + cell_size + 5
+                    self.screen.blit(heart_image, (heart_x, heart_y))
+
+            # Отрисовка патронов
+            if patron_image:
+                patron_x = self.width // 2 - 100  # Позиция патронов по центру внизу
+                patron_y = self.height - 50
+                self.screen.blit(patron_image, (patron_x, patron_y))
+                font = pygame.font.SysFont(None, 36)
+                ammo_text = font.render(str(self.ammo), True, WHITE)
+                text_rect = ammo_text.get_rect(
+                    center=(patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
+                self.screen.blit(ammo_text, text_rect)
+
+            # Отрисовка здоровья игрока (10 сердечек)
+            for i in range(player_health):
+                heart_x = self.width // 2 + 100 + i * 35  # Позиция сердечек справа от патронов
+                heart_y = self.height - 50
+                self.screen.blit(heart_image, (heart_x, heart_y))
+
+            # Получаем позицию курсора мыши
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+
+            # Проверяем, находится ли курсор над врагом
+            cursor_over_enemy = False
+            for enemy in enemies:
+                enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy, cell_size,
+                                         cell_size)
+                if enemy_rect.collidepoint(mouse_x, mouse_y):
+                    cursor_over_enemy = True
+                    break
+
+            # Отображаем прицел, если курсор над врагом
+            if cursor_over_enemy:
+                pygame.mouse.set_visible(False)
+                self.screen.blit(aim_cursor_image, (mouse_x - 20, mouse_y - 20))
+            else:
+                pygame.mouse.set_visible(True)
 
             pygame.display.flip()
 
@@ -1131,15 +1198,16 @@ class MainScreen:
 
 class Enemy:
     def __init__(self, x, y, enemy_type, image, attack_range, attack_interval, speed):
-        self.x = x  # Координата X на карте
-        self.y = y  # Координата Y на карте
-        self.enemy_type = enemy_type  # Тип врага (1 - ближний бой, 2 - дальний бой)
-        self.image = image  # Изображение врага
-        self.attack_range = attack_range  # Дистанция атаки (1 или 2 клетки)
-        self.attack_interval = attack_interval  # Интервал атаки (1 или 2 секунды)
-        self.speed = speed  # Скорость движения (0.5 клетки в секунду)
-        self.last_attack_time = 0  # Время последней атаки
-        self.last_move_time = 0  # Время последнего движения
+        self.x = x
+        self.y = y
+        self.enemy_type = enemy_type
+        self.image = image
+        self.attack_range = attack_range
+        self.attack_interval = attack_interval
+        self.speed = speed
+        self.last_attack_time = 0
+        self.last_move_time = 0
+        self.health = 3  # Здоровье врага (3 сердечка)
 
     def move_towards_hero(self, hero_x, hero_y, map_data, enemies, hero_pos, main_screen):
         """Двигается к герою, если это возможно, избегая занятых клеток."""
