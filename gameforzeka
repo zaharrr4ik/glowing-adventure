@@ -1013,6 +1013,11 @@ class MainScreen:
             print(f"Error loading aim cursor image: {e}")
             aim_cursor_image = None
 
+        # Перезарядка
+        reloading = False
+        reload_start_time = 0
+        reload_duration = 2000  # 2 секунды на перезарядку
+
         while running:
             current_time = pygame.time.get_ticks()
 
@@ -1035,8 +1040,13 @@ class MainScreen:
                         hero_pos = self.move_hero(hero_pos, -1, 0)
                     elif event.key == pygame.K_d:
                         hero_pos = self.move_hero(hero_pos, 1, 0)
+                    elif event.key == pygame.K_r and not reloading and self.ammo < 10:  # Перезарядка
+                        reloading = True
+                        reload_start_time = current_time
+                        if self.reload_sound:
+                            self.reload_sound.play()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
-                    if self.ammo > 0:
+                    if self.ammo > 0 and not reloading:
                         self.ammo -= 1
                         # Проверяем, попал ли выстрел во врага
                         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -1051,6 +1061,12 @@ class MainScreen:
 
             # Обновление камеры
             camera.update(hero_pos)
+
+            # Перезарядка
+            if reloading:
+                if current_time - reload_start_time >= reload_duration:
+                    self.ammo = 10  # Восстанавливаем патроны
+                    reloading = False
 
             # Спавн врагов
             if len(enemies) < max_enemies and current_time - last_enemy_spawn_time >= enemy_spawn_interval:
@@ -1072,7 +1088,14 @@ class MainScreen:
                         running = False
 
             # Отрисовка карты, врагов и огненных шаров
+            self.screen.fill((100, 100, 100))  # Очистка экрана
             self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
+
+            # Отрисовка героя
+            hero_x = self.width // 2 - hero_image.get_width() // 2  # Центрируем героя
+            hero_y = self.height // 2 - hero_image.get_height() // 2
+            self.screen.blit(hero_image, (hero_x, hero_y))
+
             for enemy in enemies:
                 enemy_x = enemy.x * cell_size + camera.dx
                 enemy_y = enemy.y * cell_size + camera.dy
