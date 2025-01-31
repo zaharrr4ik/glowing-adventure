@@ -972,7 +972,7 @@ class MainScreen:
         # Загрузка изображения патронов
         try:
             patron_image = pygame.image.load(os.path.join(data_dir, "patron.png")).convert_alpha()
-            patron_image = pygame.transform.scale(patron_image, (50, 50))  # Масштабируем изображение патронов
+            patron_image = pygame.transform.scale(patron_image, (80, 80))  # Увеличиваем размер патронов
         except pygame.error as e:
             print(f"Error loading patron image: {e}")
             patron_image = None
@@ -985,8 +985,12 @@ class MainScreen:
             enemy_images[key] = pygame.transform.scale(enemy_images[key], (cell_size, cell_size))
 
         # Загрузка изображения сердца
-        heart_image = pygame.image.load(os.path.join(data_dir, "heart.png")).convert_alpha()
-        heart_image = pygame.transform.scale(heart_image, (30, 30))  # Масштабируем сердечко
+        try:
+            heart_image = pygame.image.load(os.path.join(data_dir, "heart.png")).convert_alpha()
+            heart_image = pygame.transform.scale(heart_image, (50, 50))  # Увеличиваем размер сердечек
+        except pygame.error as e:
+            print(f"Error loading heart image: {e}")
+            heart_image = None
 
         # Здоровье игрока (10 сердечек)
         player_health = 10
@@ -1002,8 +1006,12 @@ class MainScreen:
         camera = Camera(self.width, self.height)
 
         # Загрузка изображения прицела
-        aim_cursor_image = pygame.image.load(os.path.join(data_dir, "aim.png")).convert_alpha()
-        aim_cursor_image = pygame.transform.scale(aim_cursor_image, (40, 40))
+        try:
+            aim_cursor_image = pygame.image.load(os.path.join(data_dir, "aim.png")).convert_alpha()
+            aim_cursor_image = pygame.transform.scale(aim_cursor_image, (80, 80))  # Увеличиваем размер прицела
+        except pygame.error as e:
+            print(f"Error loading aim cursor image: {e}")
+            aim_cursor_image = None
 
         while running:
             current_time = pygame.time.get_ticks()
@@ -1071,27 +1079,29 @@ class MainScreen:
                 self.screen.blit(enemy.image, (enemy_x, enemy_y))
 
                 # Отрисовка здоровья врага (3 сердечка)
-                for i in range(enemy.health):
-                    heart_x = enemy_x + i * 20
-                    heart_y = enemy_y + cell_size + 5
-                    self.screen.blit(heart_image, (heart_x, heart_y))
+                if heart_image:
+                    for i in range(enemy.health):
+                        heart_x = enemy_x + i * 60  # Увеличиваем расстояние между сердечками
+                        heart_y = enemy_y + cell_size + 10
+                        self.screen.blit(heart_image, (heart_x, heart_y))
 
             # Отрисовка патронов
             if patron_image:
-                patron_x = self.width // 2 - 100  # Позиция патронов по центру внизу
-                patron_y = self.height - 50
+                patron_x = self.width // 2 - 150  # Позиция патронов по центру внизу
+                patron_y = self.height - 80
                 self.screen.blit(patron_image, (patron_x, patron_y))
-                font = pygame.font.SysFont(None, 36)
+                font = pygame.font.SysFont(None, 48)  # Увеличиваем размер шрифта
                 ammo_text = font.render(str(self.ammo), True, WHITE)
                 text_rect = ammo_text.get_rect(
                     center=(patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
                 self.screen.blit(ammo_text, text_rect)
 
             # Отрисовка здоровья игрока (10 сердечек)
-            for i in range(player_health):
-                heart_x = self.width // 2 + 100 + i * 35  # Позиция сердечек справа от патронов
-                heart_y = self.height - 50
-                self.screen.blit(heart_image, (heart_x, heart_y))
+            if heart_image:
+                for i in range(player_health):
+                    heart_x = self.width // 2 + 100 + i * 60  # Увеличиваем расстояние между сердечками
+                    heart_y = self.height - 80
+                    self.screen.blit(heart_image, (heart_x, heart_y))
 
             # Получаем позицию курсора мыши
             mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -1106,9 +1116,9 @@ class MainScreen:
                     break
 
             # Отображаем прицел, если курсор над врагом
-            if cursor_over_enemy:
+            if cursor_over_enemy and aim_cursor_image:
                 pygame.mouse.set_visible(False)
-                self.screen.blit(aim_cursor_image, (mouse_x - 20, mouse_y - 20))
+                self.screen.blit(aim_cursor_image, (mouse_x - 40, mouse_y - 40))  # Центрируем прицел
             else:
                 pygame.mouse.set_visible(True)
 
