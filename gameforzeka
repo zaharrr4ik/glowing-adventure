@@ -4,6 +4,7 @@ import os
 import sys
 import time
 
+
 class Character:
     def __init__(self, name, image_name, bright_image_name, speed):
         # name: Имя персонажа (строка).
@@ -33,6 +34,7 @@ characters = [
     Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
 ]
 
+
 class Camera:
     def __init__(self, width, height):
         self.dx = 0
@@ -59,6 +61,7 @@ def initialize_pygame():
     pygame.init()
     pygame.mixer.init()
 
+
 # Определение констант
 def define_constants():
     global FPS, WHITE, BLACK, GRAY, YELLOW, RED, data_dir, sounds_dir, GAME_FONT
@@ -72,6 +75,7 @@ def define_constants():
     sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
     GAME_FONT = "comicsansms"
 
+
 # Класс Character
 
 # Создание списка персонажей
@@ -82,14 +86,17 @@ def create_characters():
         Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
     ]
 
+
 # Функция для отрисовки текста
 def draw_pixel_text(surface, text, font_size, x, y, color, font):
     font = pygame.font.SysFont(font, font_size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(x, y))
-    blurred_surface = pygame.transform.scale(text_surface, (text_surface.get_width() * 2, text_surface.get_height() * 2))
+    blurred_surface = pygame.transform.scale(text_surface,
+                                             (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, text_rect)
+
 
 # Функция для создания текстового поля ввода
 def input_box(screen, message, width, height, stars):
@@ -127,12 +134,14 @@ def input_box(screen, message, width, height, stars):
         pygame.display.flip()
     return text
 
+
 # Функция для масштабирования изображения
 
 def scale_image(image, scale_factor):
     new_width = int(image.get_width() * scale_factor)
     new_height = int(image.get_height() * scale_factor)
     return pygame.transform.scale(image, (new_width, new_height))
+
 
 # Функция для создания курсора
 
@@ -149,6 +158,7 @@ def create_cursor(cursor_image):
     except Exception as e:
         print(f"An unexpected error occurred in create_cursor: {e}")
         return None, None
+
 
 # Класс MainScreen
 
@@ -268,8 +278,8 @@ class MainScreen:
         draw_pixel_text(self.screen, "Сквозь Миры", 100, self.width // 2, 100, WHITE, font=GAME_FONT)
         if self.selected_character:
             draw_pixel_text(self.screen,
-                f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
-                48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
+                            f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
+                            48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
 
     def load_images(self):
         self.character_images = []
@@ -472,14 +482,19 @@ class MainScreen:
                             # Устанавливаем количество пуль в зависимости от выбранного персонажа
                             if selected_character.name == "Немецкий медик":
                                 self.ammo = 5  # 5 пуль для Немецкого медика
+                            elif selected_character.name == "Военный Нигерии":
+                                self.ammo = 0  # У воина из Нигерии нет пуль
+                                self.player_max_health = 12  # Увеличиваем здоровье до 12
+                                self.player_health = 12
                             else:
                                 self.ammo = 10  # 10 пуль для остальных персонажей
 
-            if confirm_button_pressed and selected_character:
-                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
-                self.selected_character = selected_character
-                self.show_character_intro(selected_character)
-                return selected_character
+                if confirm_button_pressed and selected_character:
+                    self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height,
+                                                 self.stars)
+                    self.selected_character = selected_character
+                    self.show_character_intro(selected_character)
+                    return selected_character
 
     def draw_choose_character_screen(self):
         self.screen.fill(BLACK)
@@ -594,7 +609,6 @@ class MainScreen:
 
         self.screen.fill(BLACK)
         self.show_shooting_range()
-
 
     def show_shooting_range(self):
         """Displays the shooting range game screen without shooting animation."""
@@ -760,7 +774,7 @@ class MainScreen:
                     ammo_text = font.render(str(ammo), True, WHITE)
                     text_rect = ammo_text.get_rect(
                         center=(
-                        patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
+                            patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
                     self.screen.blit(ammo_text, text_rect)
 
                 # Отрисовка пуль
@@ -775,7 +789,7 @@ class MainScreen:
                 if self.aim_cursor and self.aim_cursor_rect:
                     # Центрируем прицел на курсоре
                     self.screen.blit(self.aim_cursor, (
-                    mouse_x - self.aim_cursor_rect.width // 2, mouse_y - self.aim_cursor_rect.height // 2))
+                        mouse_x - self.aim_cursor_rect.width // 2, mouse_y - self.aim_cursor_rect.height // 2))
             else:
                 # Восстанавливаем стандартный курсор, если курсор не над мишенью
                 pygame.mouse.set_visible(True)
@@ -924,6 +938,9 @@ class MainScreen:
         image3 = pygame.image.load(os.path.join(data_dir, "piksel3.png")).convert_alpha()  # Новая клетка
         image3 = pygame.transform.scale(image3, (cell_size, cell_size))
 
+        heart_image = pygame.image.load(os.path.join(data_dir, "heart.png")).convert_alpha()
+        heart_image = pygame.transform.scale(heart_image, (cell_size, cell_size))  # Изображение для элемента "h"
+
         # Очистка экрана
         self.screen.fill((100, 100, 100))  # Серый цвет фона
 
@@ -938,6 +955,8 @@ class MainScreen:
                     self.screen.blit(image2, (x, y))
                 elif cell_type == '~':  # Новая клетка
                     self.screen.blit(image3, (x, y))
+                elif cell_type == 'h':  # Элемент "h" (здоровье)
+                    self.screen.blit(heart_image, (x, y))
                 elif cell_type == '@':  # Начальная позиция героя
                     self.screen.blit(image1, (x, y))
                     if (col_index, row_index) == hero_pos and hero_image:
@@ -969,13 +988,24 @@ class MainScreen:
             print(f"Error loading hero image: {e}")
             return
 
-        # Загрузка изображения патронов
-        try:
-            patron_image = pygame.image.load(os.path.join(data_dir, "patron.png")).convert_alpha()
-            patron_image = pygame.transform.scale(patron_image, (80, 80))  # Увеличиваем размер патронов
-        except pygame.error as e:
-            print(f"Error loading patron image: {e}")
-            patron_image = None
+        # Здоровье игрока (12 для воина из Нигерии, 10 для остальных)
+        if selected_character.name == "Военный Нигерии":
+            self.player_health = 12
+            self.player_max_health = 12
+        else:
+            self.player_health = 10
+            self.player_max_health = 10
+
+        # Загрузка изображения патронов (только для персонажей, которые могут стрелять)
+        if selected_character.name != "Военный Нигерии":
+            try:
+                patron_image = pygame.image.load(os.path.join(data_dir, "patron.png")).convert_alpha()
+                patron_image = pygame.transform.scale(patron_image, (80, 80))  # Увеличиваем размер патронов
+            except pygame.error as e:
+                print(f"Error loading patron image: {e}")
+                patron_image = None
+        else:
+            patron_image = None  # У воина из Нигерии нет патронов
 
         # Загрузка изображений врагов
         enemy_images = {
@@ -991,9 +1021,6 @@ class MainScreen:
         except pygame.error as e:
             print(f"Error loading heart image: {e}")
             heart_image = None
-
-        # Здоровье игрока (10 сердечек)
-        player_health = 10
 
         # Инициализация врагов
         enemies = []
@@ -1022,9 +1049,6 @@ class MainScreen:
         last_enemy_attack_time = 0
         enemy_attack_interval = 1000  # 1 секунда между ударами
 
-        # Желтые точки от попаданий
-        bullet_data = []  # Список для хранения данных о пулях: (x, y, время появления)
-
         while running:
             current_time = pygame.time.get_ticks()
 
@@ -1047,20 +1071,31 @@ class MainScreen:
                         hero_pos = self.move_hero(hero_pos, -1, 0)
                     elif event.key == pygame.K_d:
                         hero_pos = self.move_hero(hero_pos, 1, 0)
-                    elif event.key == pygame.K_r and not reloading and self.ammo < 10:  # Перезарядка
+                    elif event.key == pygame.K_r and not reloading and self.ammo < 10 and selected_character.name != "Военный Нигерии":  # Перезарядка
                         reloading = True
                         reload_start_time = current_time
                         if self.reload_sound:
                             self.reload_sound.play()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
-                    if self.ammo > 0 and not reloading:
+                    if selected_character.name == "Военный Нигерии":
+                        # Атака в радиусе 2 клеток
+                        mouse_x, mouse_y = pygame.mouse.get_pos()
+                        for enemy in enemies:
+                            enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
+                                                     cell_size, cell_size)
+                            if enemy_rect.collidepoint(mouse_x, mouse_y):
+                                # Проверяем, находится ли враг в радиусе 2 клеток
+                                if abs(enemy.x - hero_pos[0]) <= 2 and abs(enemy.y - hero_pos[1]) <= 2:
+                                    enemy.health -= 1  # Уменьшаем здоровье врага
+                                    if enemy.health <= 0:
+                                        enemies.remove(enemy)  # Удаляем врага, если здоровье закончилось
+                                break
+                    elif self.ammo > 0 and not reloading:
                         self.ammo -= 1
                         if self.shot_sound:
                             self.shot_sound.play()  # Звук стрельбы
-                        # Добавляем позицию выстрела и время появления
-                        mouse_x, mouse_y = pygame.mouse.get_pos()
-                        bullet_data.append((mouse_x, mouse_y, current_time))
                         # Проверяем, попал ли выстрел во врага
+                        mouse_x, mouse_y = pygame.mouse.get_pos()
                         for enemy in enemies:
                             enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
                                                      cell_size, cell_size)
@@ -1094,15 +1129,11 @@ class MainScreen:
                 # Проверяем, находится ли враг рядом с игроком
                 if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
                     if current_time - last_enemy_attack_time >= enemy_attack_interval:
-                        player_health -= 1  # Уменьшаем здоровье игрока на 1 сердечко
+                        self.player_health -= 1  # Уменьшаем здоровье игрока на 1 сердечко
                         last_enemy_attack_time = current_time
-                        if player_health <= 0:
+                        if self.player_health <= 0:
                             print("Игрок погиб!")
                             running = False
-
-            # Удаляем пули, которые существуют больше 3 секунд
-            bullet_data = [(x, y, spawn_time) for (x, y, spawn_time) in bullet_data if
-                           current_time - spawn_time <= 3000]
 
             # Отрисовка карты, врагов и огненных шаров
             self.screen.fill((100, 100, 100))  # Очистка экрана
@@ -1125,8 +1156,8 @@ class MainScreen:
                         heart_y = enemy_y + cell_size + 10
                         self.screen.blit(heart_image, (heart_x, heart_y))
 
-            # Отрисовка патронов
-            if patron_image:
+            # Отрисовка патронов (только для персонажей, которые могут стрелять)
+            if selected_character.name != "Военный Нигерии" and patron_image:
                 patron_x = self.width // 2 - 150  # Позиция патронов по центру внизу
                 patron_y = self.height - 80
                 self.screen.blit(patron_image, (patron_x, patron_y))
@@ -1136,16 +1167,20 @@ class MainScreen:
                     center=(patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
                 self.screen.blit(ammo_text, text_rect)
 
-            # Отрисовка здоровья игрока (10 сердечек)
+            # Отрисовка здоровья игрока (player_max_health сердечек)
             if heart_image:
-                for i in range(player_health):
+                for i in range(self.player_max_health):
                     heart_x = self.width // 2 + 100 + i * 60  # Увеличиваем расстояние между сердечками
                     heart_y = self.height - 80
-                    self.screen.blit(heart_image, (heart_x, heart_y))
-
-            # Отрисовка желтых точек от попаданий
-            for bullet in bullet_data:
-                pygame.draw.circle(self.screen, YELLOW, (bullet[0], bullet[1]), 5)
+                    if i < self.player_health:
+                        self.screen.blit(heart_image, (heart_x, heart_y))
+                    else:
+                        # Отрисовка пустого сердечка (если здоровье меньше максимального)
+                        empty_heart = pygame.Surface((50, 50), pygame.SRCALPHA)
+                        empty_heart.blit(heart_image, (0, 0))
+                        empty_heart.fill((255, 255, 255, 128),
+                                         special_flags=pygame.BLEND_RGBA_MULT)  # Полупрозрачное сердечко
+                        self.screen.blit(empty_heart, (heart_x, heart_y))
 
             # Получаем позицию курсора мыши
             mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -1167,7 +1202,7 @@ class MainScreen:
                 pygame.mouse.set_visible(True)
 
             pygame.display.flip()
-            
+
     def get_random_spawn_position(self, enemies, hero_pos):
         """Возвращает случайную позицию для спавна врага, которая не занята."""
         map_data = self.load_map_data()
@@ -1189,11 +1224,10 @@ class MainScreen:
             if map_data[y][x] == '#' and not self.is_cell_occupied(x, y, enemies, hero_pos):
                 return x, y
 
-
-    def load_map_data(self):
+    def load_map_data(self, map_file="pole"):
         """Загружает данные карты из файла."""
         try:
-            with open(os.path.join(data_dir, "pole"), "r") as f:
+            with open(os.path.join(data_dir, map_file), "r") as f:
                 map_data = [line.strip() for line in f.readlines() if line.strip()]  # Игнорируем пустые строки
                 if not map_data:
                     print("Error: Map file 'pole' is empty.")
@@ -1228,9 +1262,25 @@ class MainScreen:
 
         # Проверяем, что новая позиция находится в пределах карты и проходима
         if 0 <= new_x < len(map_data[0]) and 0 <= new_y < len(map_data):
-            if map_data[new_y][new_x] in ('#', '~'):  # Клетка проходима
+            if map_data[new_y][new_x] in ('#', '~', 'h'):  # Клетка проходима
+                # Обработка элемента "h"
+                if map_data[new_y][new_x] == 'h':
+                    self.player_max_health += 1  # Увеличиваем максимальное здоровье
+                    self.player_health = self.player_max_health  # Восстанавливаем здоровье до максимума
+                    # Убираем элемент "h" с карты
+                    map_data[new_y] = map_data[new_y][:new_x] + '#' + map_data[new_y][new_x + 1:]
+                    self.save_map_data(map_data)  # Сохраняем изменения в карте
                 return (new_x, new_y)
         return hero_pos  # Если движение невозможно, возвращаем старую позицию
+
+    def save_map_data(self, map_data, map_file="pole"):
+        """Сохраняет данные карты в файл."""
+        try:
+            with open(os.path.join(data_dir, map_file), "w") as f:
+                for row in map_data:
+                    f.write(row + "\n")
+        except Exception as e:
+            print(f"Error saving map data: {e}")
 
     def is_cell_occupied(self, x, y, enemies, hero_pos):
         """Проверяет, занята ли клетка (x, y) врагами или героем."""
@@ -1247,7 +1297,6 @@ class MainScreen:
             if (enemy.x, enemy.y) == (x, y):
                 return True
         return False
-
 
 
 class Enemy:
@@ -1275,21 +1324,29 @@ class Enemy:
             dx = hero_x - self.x
             dy = hero_y - self.y
             if abs(dx) > abs(dy):
-                if dx > 0 and self.can_move(self.x + 1, self.y, map_data) and not main_screen.is_cell_occupied(self.x + 1, self.y, enemies, hero_pos):
+                if dx > 0 and self.can_move(self.x + 1, self.y, map_data) and not main_screen.is_cell_occupied(
+                        self.x + 1, self.y, enemies, hero_pos):
                     self.x += 1
-                elif dx < 0 and self.can_move(self.x - 1, self.y, map_data) and not main_screen.is_cell_occupied(self.x - 1, self.y, enemies, hero_pos):
+                elif dx < 0 and self.can_move(self.x - 1, self.y, map_data) and not main_screen.is_cell_occupied(
+                        self.x - 1, self.y, enemies, hero_pos):
                     self.x -= 1
             else:
-                if dy > 0 and self.can_move(self.x, self.y + 1, map_data) and not main_screen.is_cell_occupied(self.x, self.y + 1, enemies, hero_pos):
+                if dy > 0 and self.can_move(self.x, self.y + 1, map_data) and not main_screen.is_cell_occupied(self.x,
+                                                                                                               self.y + 1,
+                                                                                                               enemies,
+                                                                                                               hero_pos):
                     self.y += 1
-                elif dy < 0 and self.can_move(self.x, self.y - 1, map_data) and not main_screen.is_cell_occupied(self.x, self.y - 1, enemies, hero_pos):
+                elif dy < 0 and self.can_move(self.x, self.y - 1, map_data) and not main_screen.is_cell_occupied(self.x,
+                                                                                                                 self.y - 1,
+                                                                                                                 enemies,
+                                                                                                                 hero_pos):
                     self.y -= 1
             self.last_move_time = current_time
 
     def can_move(self, x, y, map_data):
         """Проверяет, может ли враг переместиться на клетку (x, y)."""
         if 0 <= x < len(map_data[0]) and 0 <= y < len(map_data):
-            return map_data[y][x] == '#'
+            return map_data[y][x] in ('#', '~')  # Разрешаем движение по клеткам '#' и '~'
         return False
 
     def attack(self, hero_x, hero_y, fireballs):
@@ -1301,6 +1358,7 @@ class Enemy:
                 if self.enemy_type == 2:  # Дальний бой
                     fireballs.append(Fireball(self.x, self.y, hero_x, hero_y))
                 self.last_attack_time = current_time
+
 
 class Fireball:
     def __init__(self, start_x, start_y, target_x, target_y):
@@ -1344,6 +1402,7 @@ def main():
     mainscreen.run()
     pygame.quit()
     sys.exit()
+
 
 if __name__ == "__main__":
     main()
