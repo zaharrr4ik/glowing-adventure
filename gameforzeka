@@ -1054,6 +1054,9 @@ class MainScreen:
         last_enemy_attack_time = 0
         enemy_attack_interval = 1000  # 1 секунда между ударами
 
+        # Флаг для отзеркаливания изображения персонажа
+        flipped_image = False
+
         while running:
             current_time = pygame.time.get_ticks()
 
@@ -1074,8 +1077,10 @@ class MainScreen:
                         hero_pos = self.move_hero(hero_pos, 0, 1)
                     elif event.key == pygame.K_a:
                         hero_pos = self.move_hero(hero_pos, -1, 0)
+                        flipped_image = True  # Отзеркаливаем изображение влево
                     elif event.key == pygame.K_d:
                         hero_pos = self.move_hero(hero_pos, 1, 0)
+                        flipped_image = False  # Возвращаем нормальное изображение вправо
                     elif event.key == pygame.K_r and not reloading and self.ammo < 10 and selected_character.name != "Военный Нигерии":  # Перезарядка
                         reloading = True
                         reload_start_time = current_time
@@ -1146,10 +1151,11 @@ class MainScreen:
                 self.screen.fill((100, 100, 100))  # Очистка экрана
                 self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
 
-                # Отрисовка героя
+                # Отрисовка героя с учетом направления
                 hero_x = self.width // 2 - hero_image.get_width() // 2  # Центрируем героя
                 hero_y = self.height // 2 - hero_image.get_height() // 2
-                self.screen.blit(hero_image, (hero_x, hero_y))
+                displayed_image = pygame.transform.flip(hero_image, flipped_image, False)  # Отзеркаливаем изображение
+                self.screen.blit(displayed_image, (hero_x, hero_y))
 
                 for enemy in enemies:
                     enemy_x = enemy.x * cell_size + camera.dx
@@ -1172,7 +1178,7 @@ class MainScreen:
                     ammo_text = font.render(str(self.ammo), True, WHITE)
                     text_rect = ammo_text.get_rect(
                         center=(
-                        patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
+                            patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
                     self.screen.blit(ammo_text, text_rect)
 
                 # Отрисовка здоровья игрока (player_max_health сердечек)
@@ -1211,7 +1217,7 @@ class MainScreen:
                     pygame.mouse.set_visible(True)
 
                 pygame.display.flip()
-                
+
     def get_random_spawn_position(self, enemies, hero_pos):
         """Возвращает случайную позицию для спавна врага, которая не занята."""
         map_data = self.load_map_data()
