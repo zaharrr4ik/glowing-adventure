@@ -946,8 +946,36 @@ class MainScreen:
         heart_image = pygame.image.load(os.path.join(data_dir, "heart.png")).convert_alpha()
         heart_image = pygame.transform.scale(heart_image, (cell_size, cell_size))  # Изображение для элемента "h"
 
+        # Загрузка кадров портала
+        portal_frames = self.load_portal_frames()
+
         # Очистка экрана
         self.screen.fill((100, 100, 100))  # Серый цвет фона
+
+        # Отрисовка карты
+        for row_index, row in enumerate(map_data):
+            for col_index, cell_type in enumerate(row):
+                x = col_index * cell_size + (camera.dx if camera else 0)
+                y = row_index * cell_size + (camera.dy if camera else 0)
+                if cell_type == '#':  # Проходимая клетка
+                    self.screen.blit(image1, (x, y))
+                elif cell_type == '*':  # Непроходимая стена
+                    self.screen.blit(image2, (x, y))
+                elif cell_type == '~':  # Новая клетка
+                    self.screen.blit(image3, (x, y))
+                elif cell_type == 'h':  # Элемент "h" (здоровье)
+                    self.screen.blit(heart_image, (x, y))
+                elif cell_type == 'p':  # Портал
+                    # Анимация портала
+                    current_frame = (pygame.time.get_ticks() // 100) % len(portal_frames)
+                    self.screen.blit(portal_frames[current_frame], (x, y))
+                elif cell_type == '@':  # Начальная позиция героя
+                    self.screen.blit(image1, (x, y))
+                    if (col_index, row_index) == hero_pos and hero_image:
+                        # Центрируем героя на экране
+                        hero_x = self.width // 2 - hero_image.get_width() // 2
+                        hero_y = self.height // 2 - hero_image.get_height() // 2
+                        self.screen.blit(hero_image, (hero_x, hero_y))
 
         # Отрисовка карты
         for row_index, row in enumerate(map_data):
@@ -970,6 +998,14 @@ class MainScreen:
                         hero_y = self.height // 2 - hero_image.get_height() // 2
                         self.screen.blit(hero_image, (hero_x, hero_y))
 
+    def load_portal_frames(self):
+        portal_frames = []
+        frame_count = 3  # Количество кадров в анимации
+        for i in range(1, frame_count + 1):
+            frame = pygame.image.load(os.path.join(data_dir, "portal_frames", f"portal_{i}.png")).convert_alpha()
+            frame = pygame.transform.scale(frame, (140, 140))  # Масштабируем под размер клетки
+            portal_frames.append(frame)
+        return portal_frames
     def show_game_map(self, selected_character):
         running = True
         hero_pos = self.find_hero_initial_position()
@@ -1054,9 +1090,6 @@ class MainScreen:
         last_enemy_attack_time = 0
         enemy_attack_interval = 1000  # 1 секунда между ударами
 
-        # Флаг для отзеркаливания изображения персонажа
-        flipped_image = False
-
         while running:
             current_time = pygame.time.get_ticks()
 
@@ -1077,10 +1110,8 @@ class MainScreen:
                         hero_pos = self.move_hero(hero_pos, 0, 1)
                     elif event.key == pygame.K_a:
                         hero_pos = self.move_hero(hero_pos, -1, 0)
-                        flipped_image = True  # Отзеркаливаем изображение влево
                     elif event.key == pygame.K_d:
                         hero_pos = self.move_hero(hero_pos, 1, 0)
-                        flipped_image = False  # Возвращаем нормальное изображение вправо
                     elif event.key == pygame.K_r and not reloading and self.ammo < 10 and selected_character.name != "Военный Нигерии":  # Перезарядка
                         reloading = True
                         reload_start_time = current_time
@@ -1151,11 +1182,10 @@ class MainScreen:
                 self.screen.fill((100, 100, 100))  # Очистка экрана
                 self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
 
-                # Отрисовка героя с учетом направления
+                # Отрисовка героя
                 hero_x = self.width // 2 - hero_image.get_width() // 2  # Центрируем героя
                 hero_y = self.height // 2 - hero_image.get_height() // 2
-                displayed_image = pygame.transform.flip(hero_image, flipped_image, False)  # Отзеркаливаем изображение
-                self.screen.blit(displayed_image, (hero_x, hero_y))
+                self.screen.blit(hero_image, (hero_x, hero_y))
 
                 for enemy in enemies:
                     enemy_x = enemy.x * cell_size + camera.dx
@@ -1277,7 +1307,7 @@ class MainScreen:
 
         # Проверяем, что новая позиция находится в пределах карты и проходима
         if 0 <= new_x < len(map_data[0]) and 0 <= new_y < len(map_data):
-            if map_data[new_y][new_x] in ('#', '~', 'h'):  # Клетка проходима
+            if map_data[new_y][new_x] in ('#', '~', 'h', 'p'):  # Клетка проходима
                 # Обработка элемента "h"
                 if map_data[new_y][new_x] == 'h':
                     self.player_max_health += 1  # Увеличиваем максимальное здоровье
@@ -1285,8 +1315,18 @@ class MainScreen:
                     # Убираем элемент "h" с карты
                     map_data[new_y] = map_data[new_y][:new_x] + '#' + map_data[new_y][new_x + 1:]
                     self.save_map_data(map_data)  # Сохраняем изменения в карте
+                # Обработка портала
+                elif map_data[new_y][new_x] == 'p':
+                    self.next_level()  # Переход на следующий уровень
                 return (new_x, new_y)
         return hero_pos  # Если движение невозможно, возвращаем старую позицию
+
+    def next_level(self):
+        """Переход на следующий уровень."""
+        print("Переход на следующий уровень!")
+        # Здесь можно загрузить новую карту или увеличить уровень
+        # Например, загрузить карту "pole2.txt"
+        self.show_game_map(self.selected_character)  # Перезапуск уровня
 
     def save_map_data(self, map_data, map_file="pole"):
         """Сохраняет данные карты в файл."""
