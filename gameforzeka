@@ -165,6 +165,8 @@ def create_cursor(cursor_image):
 
 class MainScreen:
     def __init__(self, width, height):
+        self.killed_enemies = 0  # Счетчик убитых монстров
+        self.total_enemies = 10  # Общее количество монстров
         self.volume_slider_rect = None
         self.settings_buttons = None
         self.aim_cursor_rect = None
