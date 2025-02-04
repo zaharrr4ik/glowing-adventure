@@ -307,11 +307,14 @@ class MainScreen:
     def load_sounds(self):
         try:
             self.click_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "button_click.wav"))
-            self.click_sound.set_volume(0.2)  # Устанавливаем громкость звука
-            print("Button click sound loaded successfully.")  # Отладочное сообщение
+            self.click_sound.set_volume(0.2)
+            self.sword_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "sword.wav"))  # Звук удара мечом
+            self.sword_sound.set_volume(0.5)  # Устанавливаем громкость звука
+            print("Button click sound loaded successfully.")
         except pygame.error as e:
             print(f"Error loading sound file: {e}")
-            self.click_sound = None  # Если звук не загружен, устанавливаем значение None
+            self.click_sound = None
+            self.sword_sound = None
 
     def show_story(self):
         story_text = [
@@ -1080,18 +1083,20 @@ class MainScreen:
                             self.reload_sound.play()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
                     if selected_character.name == "Военный Нигерии":
-                        # Атака в радиусе 2 клеток
+                        # Атака в радиусе 1 клетки
                         mouse_x, mouse_y = pygame.mouse.get_pos()
                         for enemy in enemies:
                             enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
                                                      cell_size, cell_size)
                             if enemy_rect.collidepoint(mouse_x, mouse_y):
-                                # Проверяем, находится ли враг в радиусе 2 клеток
-                                if abs(enemy.x - hero_pos[0]) <= 2 and abs(enemy.y - hero_pos[1]) <= 2:
+                                # Проверяем, находится ли враг в радиусе 1 клетки
+                                if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
                                     enemy.health -= 1  # Уменьшаем здоровье врага
                                     if enemy.health <= 0:
                                         enemies.remove(enemy)  # Удаляем врага, если здоровье закончилось
-                                break
+                                    if self.sword_sound:
+                                        self.sword_sound.play()  # Воспроизводим звук удара мечом
+                                    break
                     elif self.ammo > 0 and not reloading:
                         self.ammo -= 1
                         if self.shot_sound:
@@ -1107,104 +1112,106 @@ class MainScreen:
                                     enemies.remove(enemy)  # Удаляем врага, если здоровье закончилось
                                 break
 
-            # Обновление камеры
-            camera.update(hero_pos)
+                # Обновление камеры
+                camera.update(hero_pos)
 
-            # Перезарядка
-            if reloading:
-                if current_time - reload_start_time >= reload_duration:
-                    self.ammo = 10  # Восстанавливаем патроны
-                    reloading = False
+                # Перезарядка
+                if reloading:
+                    if current_time - reload_start_time >= reload_duration:
+                        self.ammo = 10  # Восстанавливаем патроны
+                        reloading = False
 
-            # Спавн врагов
-            if len(enemies) < max_enemies and current_time - last_enemy_spawn_time >= enemy_spawn_interval:
-                enemy_type = 1  # Только ближний бой
-                x, y = self.get_random_spawn_position(enemies, hero_pos)
-                enemies.append(Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5))
-                last_enemy_spawn_time = current_time
+                # Спавн врагов
+                if len(enemies) < max_enemies and current_time - last_enemy_spawn_time >= enemy_spawn_interval:
+                    enemy_type = 1  # Только ближний бой
+                    x, y = self.get_random_spawn_position(enemies, hero_pos)
+                    enemies.append(Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5))
+                    last_enemy_spawn_time = current_time
 
-            # Обновление врагов
-            for enemy in enemies:
-                enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(), enemies, hero_pos, self)
-                enemy.attack(hero_pos[0], hero_pos[1], fireballs)
+                # Обновление врагов
+                for enemy in enemies:
+                    enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(), enemies, hero_pos, self)
+                    enemy.attack(hero_pos[0], hero_pos[1], fireballs)
 
-                # Проверяем, находится ли враг рядом с игроком
-                if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
-                    if current_time - last_enemy_attack_time >= enemy_attack_interval:
-                        self.player_health -= 1  # Уменьшаем здоровье игрока на 1 сердечко
-                        last_enemy_attack_time = current_time
-                        if self.player_health <= 0:
-                            print("Игрок погиб!")
-                            running = False
+                    # Проверяем, находится ли враг рядом с игроком
+                    if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
+                        if current_time - last_enemy_attack_time >= enemy_attack_interval:
+                            self.player_health -= 1  # Уменьшаем здоровье игрока на 1 сердечко
+                            last_enemy_attack_time = current_time
+                            if self.player_health <= 0:
+                                print("Игрок погиб!")
+                                running = False
 
-            # Отрисовка карты, врагов и огненных шаров
-            self.screen.fill((100, 100, 100))  # Очистка экрана
-            self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
+                # Отрисовка карты, врагов и огненных шаров
+                self.screen.fill((100, 100, 100))  # Очистка экрана
+                self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
 
-            # Отрисовка героя
-            hero_x = self.width // 2 - hero_image.get_width() // 2  # Центрируем героя
-            hero_y = self.height // 2 - hero_image.get_height() // 2
-            self.screen.blit(hero_image, (hero_x, hero_y))
+                # Отрисовка героя
+                hero_x = self.width // 2 - hero_image.get_width() // 2  # Центрируем героя
+                hero_y = self.height // 2 - hero_image.get_height() // 2
+                self.screen.blit(hero_image, (hero_x, hero_y))
 
-            for enemy in enemies:
-                enemy_x = enemy.x * cell_size + camera.dx
-                enemy_y = enemy.y * cell_size + camera.dy
-                self.screen.blit(enemy.image, (enemy_x, enemy_y))
+                for enemy in enemies:
+                    enemy_x = enemy.x * cell_size + camera.dx
+                    enemy_y = enemy.y * cell_size + camera.dy
+                    self.screen.blit(enemy.image, (enemy_x, enemy_y))
 
-                # Отрисовка здоровья врага (3 сердечка)
+                    # Отрисовка здоровья врага (3 сердечка)
+                    if heart_image:
+                        for i in range(enemy.health):
+                            heart_x = enemy_x + i * 60  # Увеличиваем расстояние между сердечками
+                            heart_y = enemy_y + cell_size + 10
+                            self.screen.blit(heart_image, (heart_x, heart_y))
+
+                # Отрисовка патронов (только для персонажей, которые могут стрелять)
+                if selected_character.name != "Военный Нигерии" and patron_image:
+                    patron_x = self.width // 2 - 150  # Позиция патронов по центру внизу
+                    patron_y = self.height - 80
+                    self.screen.blit(patron_image, (patron_x, patron_y))
+                    font = pygame.font.SysFont(None, 48)  # Увеличиваем размер шрифта
+                    ammo_text = font.render(str(self.ammo), True, WHITE)
+                    text_rect = ammo_text.get_rect(
+                        center=(
+                        patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
+                    self.screen.blit(ammo_text, text_rect)
+
+                # Отрисовка здоровья игрока (player_max_health сердечек)
                 if heart_image:
-                    for i in range(enemy.health):
-                        heart_x = enemy_x + i * 60  # Увеличиваем расстояние между сердечками
-                        heart_y = enemy_y + cell_size + 10
-                        self.screen.blit(heart_image, (heart_x, heart_y))
+                    for i in range(self.player_max_health):
+                        heart_x = self.width // 2 + 100 + i * 60  # Увеличиваем расстояние между сердечками
+                        heart_y = self.height - 80
+                        if i < self.player_health:
+                            self.screen.blit(heart_image, (heart_x, heart_y))
+                        else:
+                            # Отрисовка пустого сердечка (если здоровье меньше максимального)
+                            empty_heart = pygame.Surface((50, 50), pygame.SRCALPHA)
+                            empty_heart.blit(heart_image, (0, 0))
+                            empty_heart.fill((255, 255, 255, 128),
+                                             special_flags=pygame.BLEND_RGBA_MULT)  # Полупрозрачное сердечко
+                            self.screen.blit(empty_heart, (heart_x, heart_y))
 
-            # Отрисовка патронов (только для персонажей, которые могут стрелять)
-            if selected_character.name != "Военный Нигерии" and patron_image:
-                patron_x = self.width // 2 - 150  # Позиция патронов по центру внизу
-                patron_y = self.height - 80
-                self.screen.blit(patron_image, (patron_x, patron_y))
-                font = pygame.font.SysFont(None, 48)  # Увеличиваем размер шрифта
-                ammo_text = font.render(str(self.ammo), True, WHITE)
-                text_rect = ammo_text.get_rect(
-                    center=(patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
-                self.screen.blit(ammo_text, text_rect)
+                # Получаем позицию курсора мыши
+                mouse_x, mouse_y = pygame.mouse.get_pos()
 
-            # Отрисовка здоровья игрока (player_max_health сердечек)
-            if heart_image:
-                for i in range(self.player_max_health):
-                    heart_x = self.width // 2 + 100 + i * 60  # Увеличиваем расстояние между сердечками
-                    heart_y = self.height - 80
-                    if i < self.player_health:
-                        self.screen.blit(heart_image, (heart_x, heart_y))
-                    else:
-                        # Отрисовка пустого сердечка (если здоровье меньше максимального)
-                        empty_heart = pygame.Surface((50, 50), pygame.SRCALPHA)
-                        empty_heart.blit(heart_image, (0, 0))
-                        empty_heart.fill((255, 255, 255, 128),
-                                         special_flags=pygame.BLEND_RGBA_MULT)  # Полупрозрачное сердечко
-                        self.screen.blit(empty_heart, (heart_x, heart_y))
+                # Проверяем, находится ли курсор над врагом
+                cursor_over_enemy = False
+                for enemy in enemies:
+                    enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
+                                             cell_size,
+                                             cell_size)
+                    if enemy_rect.collidepoint(mouse_x, mouse_y):
+                        cursor_over_enemy = True
+                        break
 
-            # Получаем позицию курсора мыши
-            mouse_x, mouse_y = pygame.mouse.get_pos()
+                # Отображаем прицел, если курсор над врагом
+                if cursor_over_enemy and aim_cursor_image:
+                    pygame.mouse.set_visible(False)
+                    self.screen.blit(aim_cursor_image, (mouse_x - 40, mouse_y - 40))  # Центрируем прицел
+                else:
+                    pygame.mouse.set_visible(True)
 
-            # Проверяем, находится ли курсор над врагом
-            cursor_over_enemy = False
-            for enemy in enemies:
-                enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy, cell_size,
-                                         cell_size)
-                if enemy_rect.collidepoint(mouse_x, mouse_y):
-                    cursor_over_enemy = True
-                    break
-
-            # Отображаем прицел, если курсор над врагом
-            if cursor_over_enemy and aim_cursor_image:
-                pygame.mouse.set_visible(False)
-                self.screen.blit(aim_cursor_image, (mouse_x - 40, mouse_y - 40))  # Центрируем прицел
-            else:
-                pygame.mouse.set_visible(True)
-
-            pygame.display.flip()
-
+                pygame.display.flip()
+                
     def get_random_spawn_position(self, enemies, hero_pos):
         """Возвращает случайную позицию для спавна врага, которая не занята."""
         map_data = self.load_map_data()
