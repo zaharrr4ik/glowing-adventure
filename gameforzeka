@@ -199,8 +199,6 @@ class MainScreen:
         self.camera = Camera(self.width, self.height)  # Создаем камеру
         self.saved_hero_pos = None  # Сохраняем позицию героя
         self.saved_game_state = None  # Сохраняем состояние игры
-        self.player_health = 10  # Инициализация здоровья игрока
-        self.player_max_health = 10  # Максимальное здоровье игрока
 
         def show_death_screen(self):
             """Отображает экран смерти с картинкой и кнопками."""
@@ -245,7 +243,7 @@ class MainScreen:
                             running = False
 
                 # Отрисовка экрана смерти
-                self.screen.fill(BLACK)  # Полностью черный фон
+                self.screen.fill((0, 0, 0, 128))  # Полупрозрачный черный фон
                 if death_image:
                     death_rect = death_image.get_rect(center=(self.width // 2, self.height // 3))
                     self.screen.blit(death_image, death_rect)
@@ -1184,16 +1182,6 @@ class MainScreen:
             self.player_health = 10
             self.player_max_health = 10
 
-        # Основной игровой цикл
-        while running:
-            current_time = pygame.time.get_ticks()
-
-            # Обработка событий
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
         # Загрузка изображения патронов (только для персонажей, которые могут стрелять)
         if selected_character.name != "Военный Нигерии":
             try:
@@ -1289,7 +1277,6 @@ class MainScreen:
                                                      cell_size, cell_size)
                             if enemy_rect.collidepoint(mouse_x, mouse_y):
                                 # Проверяем, находится ли враг в радиусе 1 клетки
-                                # Проверяем, находится ли враг рядом с игроком
                                 # Проверяем, находится ли враг рядом с игроком
                                 if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
                                     if current_time - last_enemy_attack_time >= enemy_attack_interval:
