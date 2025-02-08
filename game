@@ -1,246 +1,27 @@
-def show_game_map(self, selected_character):
-    running = True
-    hero_pos = self.find_hero_initial_position()
-
-    if self.saved_hero_pos:
-        hero_pos = self.saved_hero_pos
-        self.saved_hero_pos = None
-
-    # Загрузка изображения персонажа
-    character_image_name = {
-        "Немецкий медик": "medic_common.png",
-        "Военный Нигерии": "niger_common.png",
-        "Русский военный": "test.png"
-    }.get(selected_character.name, "default_hero.png")
-
-    try:
-        hero_image = pygame.image.load(os.path.join(data_dir, character_image_name)).convert_alpha()
-        cell_size = 140
-        hero_image = pygame.transform.scale(hero_image, (int(cell_size * 1.3), int(cell_size * 1.3)))
-    except pygame.error as e:
-        print(f"Error loading hero image: {e}")
-        return
-
-    # Здоровье игрока (12 для воина из Нигерии, 10 для остальных)
-    if selected_character.name == "Военный Нигерии":
-        self.player_health = 12
-        self.player_max_health = 12
-    else:
-        self.player_health = 10
-        self.player_max_health = 10
-
-    # Загрузка изображения патронов (только для персонажей, которые могут стрелять)
-    if selected_character.name != "Военный Нигерии":
-        try:
-            patron_image = pygame.image.load(os.path.join(data_dir, "patron.png")).convert_alpha()
-            patron_image = pygame.transform.scale(patron_image, (80, 80))  # Увеличиваем размер патронов
-        except pygame.error as e:
-            print(f"Error loading patron image: {e}")
-            patron_image = None
-    else:
-        patron_image = None  # У воина из Нигерии нет патронов
-
-    # Загрузка изображений врагов
-    enemy_images = {
-        1: pygame.image.load(os.path.join(data_dir, "location_1", "dragon_1.png")).convert_alpha(),
-    }
-    for key in enemy_images:
-        enemy_images[key] = pygame.transform.scale(enemy_images[key], (cell_size, cell_size))
-
-    # Загрузка изображения сердца
-    try:
-        heart_image = pygame.image.load(os.path.join(data_dir, "heart.png")).convert_alpha()
-        heart_image = pygame.transform.scale(heart_image, (50, 50))  # Увеличиваем размер сердечек
-    except pygame.error as e:
-        print(f"Error loading heart image: {e}")
-        heart_image = None
-
-    # Инициализация врагов
-    enemies = []
-    fireballs = []
-    last_enemy_spawn_time = 0
-    enemy_spawn_interval = 3000  # 3 секунды
-    max_enemies = 10
-
-    # Инициализация камеры
-    camera = Camera(self.width, self.height)
-
-    # Загрузка изображения прицела
-    try:
-        aim_cursor_image = pygame.image.load(os.path.join(data_dir, "aim.png")).convert_alpha()
-        aim_cursor_image = pygame.transform.scale(aim_cursor_image, (80, 80))  # Увеличиваем размер прицела
-    except pygame.error as e:
-        print(f"Error loading aim cursor image: {e}")
-        aim_cursor_image = None
-
-    # Перезарядка
-    reloading = False
-    reload_start_time = 0
-    reload_duration = 2000  # 2 секунды на перезарядку
-
-    # Время последнего удара монстра
-    last_enemy_attack_time = 0
-    enemy_attack_interval = 1000  # 1 секунда между ударами
-
-    # Флаг для отзеркаливания изображения персонажа
-    flipped_image = False
-
-    while running:
-        current_time = pygame.time.get_ticks()
-
-        # Обработка событий
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.saved_hero_pos = hero_pos
-                    self.saved_game_state = "game_map"
-                    running = False
-                    self.show_menu_screen()
-                elif event.key == pygame.K_w:
-                    hero_pos = self.move_hero(hero_pos, 0, -1)
-                elif event.key == pygame.K_s:
-                    hero_pos = self.move_hero(hero_pos, 0, 1)
-                elif event.key == pygame.K_a:
-                    hero_pos = self.move_hero(hero_pos, -1, 0)
-                    flipped_image = True  # Отзеркаливаем изображение влево
-                elif event.key == pygame.K_d:
-                    hero_pos = self.move_hero(hero_pos, 1, 0)
-                    flipped_image = False  # Возвращаем нормальное изображение вправо
-                elif event.key == pygame.K_r and not reloading and self.ammo < 10 and selected_character.name != "Военный Нигерии":  # Перезарядка
-                    reloading = True
-                    reload_start_time = current_time
-                    if self.reload_sound:
-                        self.reload_sound.play()
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
-                if selected_character.name == "Военный Нигерии":
-                    # Атака в радиусе 1 клетки
-                    mouse_x, mouse_y = pygame.mouse.get_pos()
-                    for enemy in enemies:
-                        enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
-                                                 cell_size, cell_size)
-                        if enemy_rect.collidepoint(mouse_x, mouse_y):
-                            # Проверяем, находится ли враг в радиусе 1 клетки
-                            if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
-                                enemy.health -= 1  # Уменьшаем здоровье врага
-                                if enemy.health <= 0:
-                                    enemies.remove(enemy)  # Удаляем врага, если здоровье закончилось
-                                if self.sword_sound:
-                                    self.sword_sound.play()  # Воспроизводим звук удара мечом
-                                break
-                elif self.ammo > 0 and not reloading:
-                    self.ammo -= 1
-                    if self.shot_sound:
-                        self.shot_sound.play()  # Звук стрельбы
-                    # Проверяем, попал ли выстрел во врага
-                    mouse_x, mouse_y = pygame.mouse.get_pos()
-                    for enemy in enemies:
-                        enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
-                                                 cell_size, cell_size)
-                        if enemy_rect.collidepoint(mouse_x, mouse_y):
-                            enemy.health -= 1  # Уменьшаем здоровье врага
-                            if enemy.health <= 0:
-                                enemies.remove(enemy)  # Удаляем врага, если здоровье закончилось
-                            break
-
-            # Обновление камеры
-            camera.update(hero_pos)
-
-            # Перезарядка
-            if reloading:
-                if current_time - reload_start_time >= reload_duration:
-                    self.ammo = 10  # Восстанавливаем патроны
-                    reloading = False
-
-            # Спавн врагов
-            if len(enemies) < max_enemies and current_time - last_enemy_spawn_time >= enemy_spawn_interval:
-                enemy_type = 1  # Только ближний бой
-                x, y = self.get_random_spawn_position(enemies, hero_pos)
-                enemies.append(Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5))
-                last_enemy_spawn_time = current_time
-
-            # Обновление врагов
-            for enemy in enemies:
-                enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(), enemies, hero_pos, self)
-                enemy.attack(hero_pos[0], hero_pos[1], fireballs)
-
-                # Проверяем, находится ли враг рядом с игроком
-                if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
-                    if current_time - last_enemy_attack_time >= enemy_attack_interval:
-                        self.player_health -= 1  # Уменьшаем здоровье игрока на 1 сердечко
-                        last_enemy_attack_time = current_time
-                        if self.player_health <= 0:
-                            print("Игрок погиб!")
-                            running = False
-
-            # Отрисовка карты, врагов и огненных шаров
-            self.screen.fill((100, 100, 100))  # Очистка экрана
-            self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
-
-            # Отрисовка героя с учетом направления
-            hero_x = self.width // 2 - hero_image.get_width() // 2  # Центрируем героя
-            hero_y = self.height // 2 - hero_image.get_height() // 2
-            displayed_image = pygame.transform.flip(hero_image, flipped_image, False)  # Отзеркаливаем изображение
-            self.screen.blit(displayed_image, (hero_x, hero_y))
-
-            for enemy in enemies:
-                enemy_x = enemy.x * cell_size + camera.dx
-                enemy_y = enemy.y * cell_size + camera.dy
-                self.screen.blit(enemy.image, (enemy_x, enemy_y))
-
-                # Отрисовка здоровья врага (3 сердечка)
-                if heart_image:
-                    for i in range(enemy.health):
-                        heart_x = enemy_x + i * 60  # Увеличиваем расстояние между сердечками
-                        heart_y = enemy_y + cell_size + 10
-                        self.screen.blit(heart_image, (heart_x, heart_y))
-
-            # Отрисовка патронов (только для персонажей, которые могут стрелять)
-            if selected_character.name != "Военный Нигерии" and patron_image:
-                patron_x = self.width // 2 - 150  # Позиция патронов по центру внизу
-                patron_y = self.height - 80
-                self.screen.blit(patron_image, (patron_x, patron_y))
-                font = pygame.font.SysFont(None, 48)  # Увеличиваем размер шрифта
-                ammo_text = font.render(str(self.ammo), True, WHITE)
-                text_rect = ammo_text.get_rect(
-                    center=(
-                        patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
-                self.screen.blit(ammo_text, text_rect)
-
-            # Отрисовка здоровья игрока (player_max_health сердечек)
-            if heart_image:
-                for i in range(self.player_max_health):
-                    heart_x = self.width // 2 + 100 + i * 60  # Увеличиваем расстояние между сердечками
-                    heart_y = self.height - 80
-                    if i < self.player_health:
-                        self.screen.blit(heart_image, (heart_x, heart_y))
-                    else:
-                        # Отрисовка пустого сердечка (если здоровье меньше максимального)
-                        empty_heart = pygame.Surface((50, 50), pygame.SRCALPHA)
-                        empty_heart.blit(heart_image, (0, 0))
-                        empty_heart.fill((255, 255, 255, 128),
-                                         special_flags=pygame.BLEND_RGBA_MULT)  # Полупрозрачное сердечко
-                        self.screen.blit(empty_heart, (heart_x, heart_y))
-
-            # Получаем позицию курсора мыши
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-
-            # Проверяем, находится ли курсор над врагом
-            cursor_over_enemy = False
-            for enemy in enemies:
-                enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy, cell_size,
-                                         cell_size)
-                if enemy_rect.collidepoint(mouse_x, mouse_y):
-                    cursor_over_enemy = True
-                    break
-
-            # Отображаем прицел, если курсор над врагом
-            if cursor_over_enemy and aim_cursor_image:
-                pygame.mouse.set_visible(False)
-                self.screen.blit(aim_cursor_image, (mouse_x - 40, mouse_y - 40))  # Центрируем прицел
-            else:
-                pygame.mouse.set_visible(True)
-
-            pygame.display.flip()
+##########################################################################################################################
+###########################*****##########################################################################################
+##########################################################################################################################
+#########################################~~~~~~~~~~~~~~~~~~~~~~~#############*############################################
+########################################~########################~#########***############################################
+########################################~##########################~######**#**###########################################
+#####################****##############~#############################~####################################################
+####################***##################~############################~###################################################
+#################***#####################~##############################~~~~~~~~~~~~~~~~~~~###############################
+########################################~###############################***###~###########################################
+##**####################################~#####################################~###########################################
+**########~~~~##########################~########~~~~#####################*###~###########################################
+**~~~~~~~~~##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~@***##############~#######p###################################
+**########################~~~~###########~#################################*##~###########################################
+##***####################################~###############################*####~###########################################
+#*########################################~##################******#########*#~###########################################
+**##############***########################~~##############*#################~############################################
+*########################################~################################~###############################################
+*########################################~##############################~#################################################
+*########***###########****################~#################**########~##################################################
+*#######*****##############################~~~~~~~~~~~~~~~~~~~~~~~~~~#####################################################
+*#######***###############################################################################################################
+*#########################################################################################################################
+##########################################################################################################################
+##########################################################################################################################
+##########################################################################################################################
+##########################################################################################################################
