@@ -1126,17 +1126,17 @@ class MainScreen:
         cell_size = 140  # Размер клетки
 
         # Загрузка изображений с прозрачностью и масштабированием
-        image1 = pygame.image.load(os.path.join(data_dir, "inoplanet_blok.png")).convert_alpha()
+        image1 = pygame.image.load(os.path.join(data_dir, "piksel.png")).convert_alpha()
         image1 = pygame.transform.scale(image1, (cell_size, cell_size))
 
-        image2 = pygame.image.load(os.path.join(data_dir, "ctarai_ctena.png")).convert_alpha()
+        image2 = pygame.image.load(os.path.join(data_dir, "piksel2.png")).convert_alpha()
         image2 = pygame.transform.scale(image2, (cell_size, cell_size))
 
-        image3 = pygame.image.load(os.path.join(data_dir, "inoplanet_blok_doroga.png")).convert_alpha()
+        image3 = pygame.image.load(os.path.join(data_dir, "piksel3.png")).convert_alpha()  # Новая клетка
         image3 = pygame.transform.scale(image3, (cell_size, cell_size))
 
         heart_image = pygame.image.load(os.path.join(data_dir, "heart.png")).convert_alpha()
-        heart_image = pygame.transform.scale(heart_image, (cell_size, cell_size))
+        heart_image = pygame.transform.scale(heart_image, (cell_size, cell_size))  # Изображение для элемента "h"
 
         # Загрузка кадров портала
         portal_frames = self.load_portal_frames()
@@ -1158,11 +1158,34 @@ class MainScreen:
                 elif cell_type == 'h':  # Элемент "h" (здоровье)
                     self.screen.blit(heart_image, (x, y))
                 elif cell_type == 'p':  # Портал
+                    # Анимация портала
                     current_frame = (pygame.time.get_ticks() // 100) % len(portal_frames)
                     self.screen.blit(portal_frames[current_frame], (x, y))
                 elif cell_type == '@':  # Начальная позиция героя
                     self.screen.blit(image1, (x, y))
                     if (col_index, row_index) == hero_pos and hero_image:
+                        # Центрируем героя на экране
+                        hero_x = self.width // 2 - hero_image.get_width() // 2
+                        hero_y = self.height // 2 - hero_image.get_height() // 2
+                        self.screen.blit(hero_image, (hero_x, hero_y))
+
+        # Отрисовка карты
+        for row_index, row in enumerate(map_data):
+            for col_index, cell_type in enumerate(row):
+                x = col_index * cell_size + (camera.dx if camera else 0)
+                y = row_index * cell_size + (camera.dy if camera else 0)
+                if cell_type == '#':  # Проходимая клетка
+                    self.screen.blit(image1, (x, y))
+                elif cell_type == '*':  # Непроходимая стена
+                    self.screen.blit(image2, (x, y))
+                elif cell_type == '~':  # Новая клетка
+                    self.screen.blit(image3, (x, y))
+                elif cell_type == 'h':  # Элемент "h" (здоровье)
+                    self.screen.blit(heart_image, (x, y))
+                elif cell_type == '@':  # Начальная позиция героя
+                    self.screen.blit(image1, (x, y))
+                    if (col_index, row_index) == hero_pos and hero_image:
+                        # Центрируем героя на экране
                         hero_x = self.width // 2 - hero_image.get_width() // 2
                         hero_y = self.height // 2 - hero_image.get_height() // 2
                         self.screen.blit(hero_image, (hero_x, hero_y))
@@ -1183,12 +1206,12 @@ class MainScreen:
         text_rect = text_surface.get_rect(topleft=(20, 20))  # Позиция в левом верхнем углу
         self.screen.blit(text_surface, text_rect)  # Отрисовка текста
 
-    def show_game_map(self, selected_character, map_file="pole"):
+    def show_game_map(self, selected_character):
         if self.player_health <= 0:
             self.show_death_screen()
             return
         running = True
-        hero_pos = self.find_hero_initial_position(map_file)
+        hero_pos = self.find_hero_initial_position()
 
         if self.saved_hero_pos:
             hero_pos = self.saved_hero_pos
@@ -1360,7 +1383,7 @@ class MainScreen:
 
             # Обновление врагов
             for enemy in enemies:
-                enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(map_file), enemies, hero_pos, self)
+                enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(), enemies, hero_pos, self)
                 enemy.attack(hero_pos[0], hero_pos[1], fireballs)
 
                 # Проверяем, находится ли враг рядом с игроком
@@ -1374,7 +1397,7 @@ class MainScreen:
 
             # Отрисовка карты, врагов и огненных шаров
             self.screen.fill((0, 128, 0))  # Зеленый фон
-            self.draw_map(map_file=map_file, hero_pos=hero_pos, hero_image=hero_image, camera=camera)
+            self.draw_map(hero_pos=hero_pos, hero_image=hero_image, camera=camera)
 
             # Отрисовка счетчика монстров
             self.draw_enemy_counter()
@@ -1387,7 +1410,64 @@ class MainScreen:
 
             for enemy in enemies:
                 enemy_x = enemy.x * cell_size + camera.dx
-                enemy_y = enemy.y * cell_size + camera.d
+                enemy_y = enemy.y * cell_size + camera.dy
+                self.screen.blit(enemy.image, (enemy_x, enemy_y))
+
+                # Отрисовка здоровья врага (3 сердечка)
+                if heart_image:
+                    for i in range(enemy.health):
+                        heart_x = enemy_x + i * 60  # Увеличиваем расстояние между сердечками
+                        heart_y = enemy_y + cell_size + 10
+                        self.screen.blit(heart_image, (heart_x, heart_y))
+
+            # Отрисовка патронов (только для персонажей, которые могут стрелять)
+            if selected_character.name != "Военный Нигерии" and patron_image:
+                patron_x = self.width // 2 - 150  # Позиция патронов по центру внизу
+                patron_y = self.height - 80
+                self.screen.blit(patron_image, (patron_x, patron_y))
+                font = pygame.font.SysFont(None, 48)  # Увеличиваем размер шрифта
+                ammo_text = font.render(str(self.ammo), True, WHITE)
+                text_rect = ammo_text.get_rect(
+                    center=(
+                        patron_x + patron_image.get_width() // 2, patron_y + patron_image.get_height() // 2 - 10))
+                self.screen.blit(ammo_text, text_rect)
+
+            # Отрисовка здоровья игрока (player_max_health сердечек)
+            if heart_image:
+                for i in range(self.player_max_health):
+                    heart_x = self.width // 2 + 100 + i * 60  # Увеличиваем расстояние между сердечками
+                    heart_y = self.height - 80
+                    if i < self.player_health:
+                        self.screen.blit(heart_image, (heart_x, heart_y))
+                    else:
+                        # Отрисовка пустого сердечка (если здоровье меньше максимального)
+                        empty_heart = pygame.Surface((50, 50), pygame.SRCALPHA)
+                        empty_heart.blit(heart_image, (0, 0))
+                        empty_heart.fill((255, 255, 255, 128),
+                                         special_flags=pygame.BLEND_RGBA_MULT)  # Полупрозрачное сердечко
+                        self.screen.blit(empty_heart, (heart_x, heart_y))
+
+            # Получаем позицию курсора мыши
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+
+            # Проверяем, находится ли курсор над врагом
+            cursor_over_enemy = False
+            for enemy in enemies:
+                enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
+                                         cell_size,
+                                         cell_size)
+                if enemy_rect.collidepoint(mouse_x, mouse_y):
+                    cursor_over_enemy = True
+                    break
+
+            # Отображаем прицел, если курсор над врагом
+            if cursor_over_enemy and aim_cursor_image:
+                pygame.mouse.set_visible(False)
+                self.screen.blit(aim_cursor_image, (mouse_x - 40, mouse_y - 40))  # Центрируем прицел
+            else:
+                pygame.mouse.set_visible(True)
+
+            pygame.display.flip()
 
     def get_random_spawn_position(self, enemies, hero_pos):
         """Возвращает случайную позицию для спавна врага, которая не занята."""
@@ -1466,11 +1546,6 @@ class MainScreen:
                         return hero_pos  # Возвращаем старую позицию, если не убил всех монстров
                 return (new_x, new_y)
         return hero_pos  # Если движение невозможно, возвращаем старую позицию
-
-    def next_level(self):
-        """Переход на следующий уровень."""
-        print("Переход на следующий уровень!")
-        self.show_game_map(self.selected_character, map_file="pole2.txt")  # Загружаем новую карту
 
     def next_level(self):
         """Переход на следующий уровень."""
