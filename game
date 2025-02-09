@@ -1315,11 +1315,15 @@ class MainScreen:
                                 # Проверяем, находится ли враг в радиусе 2 блоков от героя
                                 if abs(enemy.x - hero_pos[0]) <= 2 and abs(enemy.y - hero_pos[1]) <= 2:
                                     enemy.health -= 1  # Наносим урон врагу
+
                                     if enemy.health <= 0:
                                         enemies.remove(enemy)
                                         self.killed_enemies += 1
                                     if self.sword_sound:
                                         self.sword_sound.play()
+                                    if self.player_health <= 0:
+                                        self.show_death_screen()
+                                        return
                                     break
                     elif self.ammo > 0 and not reloading:
                         self.ammo -= 1
@@ -1359,8 +1363,8 @@ class MainScreen:
                         self.player_health -= 1
                         last_enemy_attack_time = current_time
                         if self.player_health <= 0:
-                            print("Игрок погиб!")
-                            running = False
+                            self.show_death_screen()
+                            return
 
             self.screen.fill((0, 128, 0))
             self.draw_map(map_file, hero_pos, hero_image, camera)
