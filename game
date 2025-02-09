@@ -3,6 +3,7 @@ import random
 import os
 import sys
 import time
+import json
 
 
 class Character:
@@ -1126,6 +1127,11 @@ class MainScreen:
 
         cell_size = 140  # Размер клетки
 
+        # Инициализация image1, image2, image3
+        image1 = None
+        image2 = None
+        image3 = None
+
         # Загрузка изображений в зависимости от карты
         if map_file == "pole":
             image1 = pygame.image.load(os.path.join(data_dir, "piksel.png")).convert_alpha()
@@ -1199,6 +1205,30 @@ class MainScreen:
             hero_pos = self.saved_hero_pos
             self.saved_hero_pos = None
 
+        # Загрузка изображений врагов
+        enemy_images = {
+            1: pygame.image.load(os.path.join(data_dir, "location_1", "dragon_1.png")).convert_alpha(),
+            2: pygame.image.load(os.path.join(data_dir, "pudge.png")).convert_alpha(),  # Добавляем изображение Pudge
+        }
+
+        for key in enemy_images:
+            enemy_images[key] = pygame.transform.scale(enemy_images[key], (140, 140))  # Масштабируем изображения
+
+        # Инициализация enemies
+        enemies = []
+
+        # Добавляем Pudge на второй уровень
+        if map_file == "pole2.txt":
+            pudge_x, pudge_y = self.get_random_spawn_position(enemies, hero_pos, map_file)
+            pudge = Enemy(pudge_x, pudge_y, 2, enemy_images[2], 1, 2, 0.5, self)
+            pudge.health = 20  # Устанавливаем здоровье Pudge
+            pudge.attack_damage = 2  # Урон Pudge (2 сердца)
+            pudge.heal_interval = 10000  # Восстановление здоровья каждую секунду (1000 мс)
+            enemies.append(pudge)
+
+        # Остальной код метода show_game_map
+        ...
+
         character_image_name = {
             "Немецкий медик": "medic_common.png",
             "Военный Нигерии": "niger_common.png",
@@ -1252,9 +1282,10 @@ class MainScreen:
         max_enemies = 10
 
         # Добавляем Pudge на второй уровень
+        # В методе show_game_map
         if map_file == "pole2.txt":
             pudge_x, pudge_y = self.get_random_spawn_position(enemies, hero_pos, map_file)
-            pudge = Enemy(pudge_x, pudge_y, 2, enemy_images[2], 1, 2, 0.5)  # Pudge имеет тип 2
+            pudge = Enemy(pudge_x, pudge_y, 2, enemy_images[2], 1, 2, 0.5, self)  # Передаем self (MainScreen)
             pudge.health = 20  # Устанавливаем здоровье Pudge
             pudge.attack_damage = 2  # Урон Pudge (2 сердца)
             pudge.heal_interval = 10000  # Восстановление здоровья каждую секунду (1000 мс)
@@ -1350,8 +1381,11 @@ class MainScreen:
             if len(enemies) < max_enemies and current_time - last_enemy_spawn_time >= enemy_spawn_interval:
                 enemy_type = 1
                 x, y = self.get_random_spawn_position(enemies, hero_pos, map_file)
-                enemies.append(Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5))
+                enemies.append(
+                    Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5, self))  # Исправлено
                 last_enemy_spawn_time = current_time
+
+                # Создание Pudge для уровня pole2.txt
 
             for enemy in enemies:
                 enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(map_file), enemies, hero_pos, self)
@@ -1545,8 +1579,7 @@ class MainScreen:
 
 
 class Enemy:
-    def __init__(self, x, y, enemy_type, image, attack_range, attack_interval, speed):
-        self.player_health = None
+    def __init__(self, x, y, enemy_type, image, attack_range, attack_interval, speed, main_screen):
         self.x = x
         self.y = y
         self.enemy_type = enemy_type
@@ -1560,6 +1593,7 @@ class Enemy:
         self.attack_damage = 1  # По умолчанию урон 1
         self.heal_interval = 0  # По умолчанию восстановление отключено
         self.last_heal_time = 0  # Время последнего восстановления здоровья
+        self.main_screen = main_screen  # Передаем объект MainScreen
 
     def move_towards_hero(self, hero_x, hero_y, map_data, enemies, hero_pos, main_screen):
         """Двигается к герою, если это возможно, избегая занятых клеток."""
@@ -1605,7 +1639,7 @@ class Enemy:
             distance = abs(self.x - hero_x) + abs(self.y - hero_y)
             if distance <= self.attack_range:  # Проверяем радиус атаки
                 if self.enemy_type == 2:  # Pudge
-                    self.player_health -= self.attack_damage  # Наносим урон (2 сердца)
+                    self.main_screen.player_health -= self.attack_damage  # Наносим урон (2 сердца)
                 elif self.enemy_type == 1:  # Другие враги
                     fireballs.append(Fireball(self.x, self.y, hero_x, hero_y))
                 self.last_attack_time = current_time
