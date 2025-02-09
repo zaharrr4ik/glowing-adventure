@@ -166,7 +166,7 @@ def create_cursor(cursor_image):
 class MainScreen:
     def __init__(self, width, height):
         self.killed_enemies = 0  # Счетчик убитых монстров
-        self.total_enemies = 3  # Общее количество монстров на уровне
+        self.total_enemies = 1  # Общее количество монстров на уровне
         self.volume_slider_rect = None
         self.settings_buttons = None
         self.aim_cursor_rect = None
@@ -1254,8 +1254,11 @@ class MainScreen:
         # Добавляем Pudge на второй уровень
         if map_file == "pole2.txt":
             pudge_x, pudge_y = self.get_random_spawn_position(enemies, hero_pos, map_file)
-            enemies.append(Enemy(pudge_x, pudge_y, 2, enemy_images[2], 1, 2, 0.5))  # Pudge имеет тип 2
-
+            pudge = Enemy(pudge_x, pudge_y, 2, enemy_images[2], 1, 2, 0.5)  # Pudge имеет тип 2
+            pudge.health = 20  # Устанавливаем здоровье Pudge
+            pudge.attack_damage = 2  # Урон Pudge (2 сердца)
+            pudge.heal_interval = 1000  # Восстановление здоровья каждую секунду (1000 мс)
+            enemies.append(pudge)
         camera = Camera(self.width, self.height)
 
         try:
@@ -1309,13 +1312,9 @@ class MainScreen:
                             enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
                                                      cell_size, cell_size)
                             if enemy_rect.collidepoint(mouse_x, mouse_y):
-                                if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
-                                    if current_time - last_enemy_attack_time >= enemy_attack_interval:
-                                        self.player_health -= 1
-                                        last_enemy_attack_time = current_time
-                                        if self.player_health <= 0:
-                                            self.show_death_screen()
-                                            running = False
+                                # Проверяем, находится ли враг в радиусе 2 блоков от героя
+                                if abs(enemy.x - hero_pos[0]) <= 2 and abs(enemy.y - hero_pos[1]) <= 2:
+                                    enemy.health -= 1  # Наносим урон врагу
                                     if enemy.health <= 0:
                                         enemies.remove(enemy)
                                         self.killed_enemies += 1
@@ -1353,6 +1352,7 @@ class MainScreen:
             for enemy in enemies:
                 enemy.move_towards_hero(hero_pos[0], hero_pos[1], self.load_map_data(map_file), enemies, hero_pos, self)
                 enemy.attack(hero_pos[0], hero_pos[1], fireballs)
+                enemy.heal()  # Вызываем метод heal для восстановления здоровья
 
                 if abs(enemy.x - hero_pos[0]) <= 1 and abs(enemy.y - hero_pos[1]) <= 1:
                     if current_time - last_enemy_attack_time >= enemy_attack_interval:
@@ -1552,9 +1552,9 @@ class Enemy:
         self.speed = speed
         self.last_attack_time = 0
         self.last_move_time = 0
-        self.health = 3  # Здоровье врага (3 сердечка)
-        self.total_enemies = 50  # Общее количество монстров на уровне
-        self.killed_enemies = 0  # Количество убитых монстров
+        self.health = 3  # По умолчанию 3 HP
+        self.attack_damage = 1  # По умолчанию урон 1
+        self.heal_interval = 0  # По умолчанию восстановление отключено
         self.last_heal_time = 0  # Время последнего восстановления здоровья
 
     def move_towards_hero(self, hero_x, hero_y, map_data, enemies, hero_pos, main_screen):
@@ -1601,17 +1601,18 @@ class Enemy:
             distance = abs(self.x - hero_x) + abs(self.y - hero_y)
             if distance <= self.attack_range:  # Проверяем радиус атаки
                 if self.enemy_type == 2:  # Pudge
-                    self.player_health -= 2  # Наносим 2 сердца урона
+                    self.player_health -= self.attack_damage  # Наносим урон (2 сердца)
                 elif self.enemy_type == 1:  # Другие враги
                     fireballs.append(Fireball(self.x, self.y, hero_x, hero_y))
                 self.last_attack_time = current_time
 
     def heal(self):
-        """Восстанавливает здоровье каждые 3 секунды."""
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_heal_time >= 3000:  # 3 секунды
-            self.health = min(self.health + 1, 20)  # Максимум 20 HP
-            self.last_heal_time = current_time
+        """Восстанавливает здоровье каждые heal_interval миллисекунд."""
+        if self.heal_interval > 0:  # Если восстановление включено
+            current_time = pygame.time.get_ticks()
+            if current_time - self.last_heal_time >= self.heal_interval:
+                self.health = min(self.health + 1, 20)  # Восстанавливаем 1 HP, но не больше 20
+                self.last_heal_time = current_time
 
 
 class Fireball:
