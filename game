@@ -3,7 +3,7 @@ import random
 import os
 import sys
 import time
-import json
+
 
 
 class Character:
@@ -1360,6 +1360,7 @@ class MainScreen:
         self.screen.blit(text_surface, text_rect)  # Отрисовка текста
 
     def show_game_map(self, selected_character, map_file="pole"):
+        start_time = pygame.time.get_ticks()
         if self.player_health <= 0:
             self.show_death_screen()
             return
@@ -1517,19 +1518,19 @@ class MainScreen:
                             enemy_rect = pygame.Rect(enemy.x * cell_size + camera.dx, enemy.y * cell_size + camera.dy,
                                                      cell_size, cell_size)
                             if enemy_rect.collidepoint(mouse_x, mouse_y):
-                                # Проверяем, находится ли враг в радиусе 2 блоков от героя
                                 if abs(enemy.x - hero_pos[0]) <= 2 and abs(enemy.y - hero_pos[1]) <= 2:
-                                    enemy.health -= 1  # Наносим урон врагу
-
+                                    enemy.health -= 1
                                     if enemy.health <= 0:
                                         enemies.remove(enemy)
                                         self.killed_enemies += 1
-                                    if self.sword_sound:
-                                        self.sword_sound.play()
-                                    if self.player_health <= 0:
-                                        self.show_death_screen()
-                                        return
-                                    break
+                                        # Проверяем, был ли это Pudge
+                                        if enemy.enemy_type == 2:
+                                            total_time = (pygame.time.get_ticks() - start_time) // 1000
+                                            self.save_game_result(self.killed_enemies, total_time)
+                                            self.show_win_screen()
+                                            return  # Выходим из метода, чтобы остановить игру
+
+                    # Для стрельбы (другие персонажи)
                     elif self.ammo > 0 and not reloading:
                         self.ammo -= 1
                         if self.shot_sound:
@@ -1543,6 +1544,12 @@ class MainScreen:
                                 if enemy.health <= 0:
                                     enemies.remove(enemy)
                                     self.killed_enemies += 1
+                                    # Проверяем, был ли это Pudge
+                                    if enemy.enemy_type == 2:
+                                        total_time = (pygame.time.get_ticks() - start_time) // 1000
+                                        self.save_game_result(self.killed_enemies, total_time)
+                                        self.show_win_screen()
+                                        return
                                 break
 
             camera.update(hero_pos)
@@ -1633,19 +1640,6 @@ class MainScreen:
                 self.screen.blit(aim_cursor_image, (mouse_x - 40, mouse_y - 40))
             else:
                 pygame.mouse.set_visible(True)
-
-            for enemy in enemies[:]:
-                if player.attack(enemy):
-                    self.killed_enemies += 1
-                    enemies.remove(enemy)
-
-                    # Проверка на Pudge
-                    if enemy.enemy_type == 2:  # Теперь правильный отступ
-                        total_time = (pygame.time.get_ticks() - start_time) // 1000
-                        self.save_game_result(self.killed_enemies, total_time)
-                        self.show_win_screen()
-                        running = False
-                        break
 
             pygame.display.flip()
 
