@@ -243,6 +243,7 @@ class MainScreen:
 
     def show_win_screen(self):
         """Отображает окно победы с рейтингом и кнопками"""
+        pygame.mouse.set_visible(True)
         try:
             win_image = pygame.image.load(os.path.join(data_dir, "win.png")).convert_alpha()
             win_image = pygame.transform.scale(win_image, (self.width // 2, self.height // 2))
@@ -307,6 +308,12 @@ class MainScreen:
                             self.click_sound.play()
                         self.show_rating()
 
+            pos = pygame.mouse.get_pos()
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEMOTION:
+                    # Отрисовываем стандартный курсор
+                    pygame.draw.circle(self.screen, WHITE, pos, 3)
+
     def save_game_result(self, kills, time_seconds):
         """Сохраняет результат игры в TXT файл"""
         result = f"{self.player_name}\t{kills}\t{time_seconds}\t{time.time()}\n"
@@ -358,7 +365,7 @@ class MainScreen:
     def show_rating(self):
         """Отображает таблицу рейтинга"""
         rating_font = pygame.font.SysFont(GAME_FONT, 48)
-        small_font = pygame.font.SysFont(GAME_FONT, 36)
+        small_font = pygame.font.SysFont(GAME_FONT, 28)  # Было 36
 
         # Создаем поверхность для рейтинга
         rating_surface = pygame.Surface((600, 500), pygame.SRCALPHA)
@@ -379,8 +386,8 @@ class MainScreen:
         y = 80
         for i, result in enumerate(self.game_results[:10]):
             color = place_colors.get(i, (150, 150, 150))
-            time_str = f"{result['time'] // 60:02}:{result['time'] % 60:02}"
-            text = f"{i + 1}. {result['player']} - Убийств: {result['kills']} Время: {time_str}"
+            time_str = f"{result['time'] // 60:02}мин {result['time'] % 60:02}сек"  # Новый формат
+            text = f"{i + 1}. {result['player'][:15]:<15} Уб: {result['kills']:2} Вр: {time_str}"
             text_surf = small_font.render(text, True, color)
             rating_surface.blit(text_surf, (20, y))
             y += 50
@@ -537,7 +544,7 @@ class MainScreen:
         button_height = 50
         button_x = self.width // 2 - button_width // 2
         button_y_spacing = 20
-        button_texts = ["Начать новую игру", "Продолжить игру", "Загрузить игру", "Настройки", "Выйти"]
+        button_texts = ["Начать новую игру", "Продолжить игру", "Рейтинг", "Настройки", "Выйти"]
         self.buttons = []
         for i, text in enumerate(button_texts):
             button_y = menu_rect.bottom + 50 + i * (button_height + button_y_spacing)
@@ -771,6 +778,8 @@ class MainScreen:
                                 self.show_settings_menu()
                             elif i == 4:
                                 self.show_exit_menu()
+                            elif i == 2:
+                                self.show_rating()
 
     # Функция для отображения меню выхода из игры
     def show_exit_menu(self):
@@ -977,6 +986,7 @@ class MainScreen:
 
     def show_shooting_range(self):
         """Displays the shooting range game screen without shooting animation."""
+        pygame.mouse.set_visible(True)
         self.saved_game_state = "shooting_range"
         try:
             # Load resources
@@ -1169,6 +1179,11 @@ class MainScreen:
         self.test_x = test_x
         self.flipped_image = flipped_image
 
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEMOTION:
+                # Принудительная отрисовка курсора
+                pygame.mouse.set_visible(True)
+
     def show_manga(self):
         # Останавливаем звук ходьбы, если он играет
         if self.walk_sound and self.walk_sound.get_num_channels() > 0:
@@ -1360,6 +1375,7 @@ class MainScreen:
         self.screen.blit(text_surface, text_rect)  # Отрисовка текста
 
     def show_game_map(self, selected_character, map_file="pole"):
+        pygame.mouse.set_visible(True)
         start_time = pygame.time.get_ticks()
         if self.player_health <= 0:
             self.show_death_screen()
@@ -1886,4 +1902,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() сделай так что при нажатии на кнопку Рейтинг в главном меню, нам открывалась таблица лидеров как и при победе над pudge
