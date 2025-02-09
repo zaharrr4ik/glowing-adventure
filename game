@@ -200,6 +200,9 @@ class MainScreen:
         self.camera = Camera(self.width, self.height)  # Создаем камеру
         self.saved_hero_pos = None  # Сохраняем позицию героя
         self.saved_game_state = None  # Сохраняем состояние игры
+        self.game_results = []
+        self.load_game_results()
+
 
         # Initialize player health attributes
         self.player_health = 10  # Default value, can be changed later
@@ -237,6 +240,168 @@ class MainScreen:
 
         pygame.quit()
         sys.exit()
+
+    def show_win_screen(self):
+        """Отображает окно победы с рейтингом и кнопками"""
+        try:
+            win_image = pygame.image.load(os.path.join(data_dir, "win.png")).convert_alpha()
+            win_image = pygame.transform.scale(win_image, (self.width // 2, self.height // 2))
+        except pygame.error:
+            win_image = None
+
+        # Создаем кнопки
+        button_width = 200
+        button_height = 60
+        button_padding = 40
+
+        menu_button_rect = pygame.Rect(
+            (self.width - button_width) // 2,
+            self.height - button_height - button_padding,
+            button_width,
+            button_height
+        )
+
+        rating_button_rect = pygame.Rect(
+            (self.width - button_width) // 2,
+            self.height - button_height * 2 - button_padding * 2,
+            button_width,
+            button_height
+        )
+
+        running = True
+        while running:
+            self.screen.fill(BLACK)
+            for star in self.stars:
+                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+
+            # Отрисовка изображения победы
+            if win_image:
+                win_rect = win_image.get_rect(center=(self.width // 2, self.height // 3))
+                self.screen.blit(win_image, win_rect)
+
+            # Отрисовка кнопок
+            for rect, text, color in [
+                (menu_button_rect, "Меню", (0, 200, 0)),
+                (rating_button_rect, "Рейтинг", (200, 0, 0))
+            ]:
+                pygame.draw.rect(self.screen, color, rect, border_radius=10)
+                text_surf = self.font.render(text, True, WHITE)
+                text_rect = text_surf.get_rect(center=rect.center)
+                self.screen.blit(text_surf, text_rect)
+
+            pygame.display.flip()
+
+            # Обработка событий
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if menu_button_rect.collidepoint(event.pos):
+                        if self.click_sound:
+                            self.click_sound.play()
+                        running = False
+                        self.show_menu_screen()
+                    elif rating_button_rect.collidepoint(event.pos):
+                        if self.click_sound:
+                            self.click_sound.play()
+                        self.show_rating()
+
+    def save_game_result(self, kills, time_seconds):
+        """Сохраняет результат игры в TXT файл"""
+        result = f"{self.player_name}\t{kills}\t{time_seconds}\t{time.time()}\n"
+
+        # Добавляем результат в список
+        self.game_results.append({
+            "player": self.player_name,
+            "kills": kills,
+            "time": time_seconds,
+            "timestamp": time.time()
+        })
+
+        # Сортируем по времени (приоритет) и количеству убийств
+        self.game_results.sort(key=lambda x: (x['time'], -x['kills']))
+
+        # Сохраняем только топ-10 результатов
+        if len(self.game_results) > 10:
+            self.game_results = self.game_results[:10]
+
+        try:
+            with open("results.txt", "w") as f:
+                for res in self.game_results:
+                    f.write(f"{res['player']}\t{res['kills']}\t{res['time']}\t{res['timestamp']}\n")
+        except Exception as e:
+            print(f"Error saving results: {e}")
+
+    def load_game_results(self):
+        """Загружает результаты из файла"""
+        self.game_results = []
+        try:
+            with open("results.txt", "r") as f:
+                for line in f.readlines():
+                    try:
+                        parts = line.strip().split('\t')
+                        if len(parts) == 4:
+                            self.game_results.append({
+                                "player": parts[0],
+                                "kills": int(parts[1]),
+                                "time": int(parts[2]),
+                                "timestamp": float(parts[3])
+                            })
+                    except (ValueError, IndexError) as e:
+                        print(f"Error parsing line: {line.strip()} - {e}")
+        except FileNotFoundError:
+            print("Results file not found, starting fresh")
+        except Exception as e:
+            print(f"Error loading results: {e}")
+
+    def show_rating(self):
+        """Отображает таблицу рейтинга"""
+        rating_font = pygame.font.SysFont(GAME_FONT, 48)
+        small_font = pygame.font.SysFont(GAME_FONT, 36)
+
+        # Создаем поверхность для рейтинга
+        rating_surface = pygame.Surface((600, 500), pygame.SRCALPHA)
+        rating_surface.fill((30, 30, 30, 200))
+
+        # Заголовок
+        title = rating_font.render("Топ игроков", True, WHITE)
+        rating_surface.blit(title, (20, 20))
+
+        # Цвета для мест
+        place_colors = {
+            0: (255, 215, 0),  # Золото
+            1: (192, 192, 192),  # Серебро
+            2: (205, 127, 50)  # Бронза
+        }
+
+        # Отображаем топ-10 результатов
+        y = 80
+        for i, result in enumerate(self.game_results[:10]):
+            color = place_colors.get(i, (150, 150, 150))
+            time_str = f"{result['time'] // 60:02}:{result['time'] % 60:02}"
+            text = f"{i + 1}. {result['player']} - Убийств: {result['kills']} Время: {time_str}"
+            text_surf = small_font.render(text, True, color)
+            rating_surface.blit(text_surf, (20, y))
+            y += 50
+
+        # Центрируем поверхность с рейтингом
+        rating_rect = rating_surface.get_rect(center=(self.width // 2, self.height // 2))
+
+        running = True
+        while running:
+            self.screen.fill(BLACK)
+            for star in self.stars:
+                pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
+
+            # Отрисовка рейтинга
+            self.screen.blit(rating_surface, rating_rect)
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type in (pygame.QUIT, pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN):
+                    running = False
 
     def show_message(self, message):
         """Отображает сообщение в центре экрана и ставит игру на паузу."""
@@ -1201,6 +1366,12 @@ class MainScreen:
         running = True
         hero_pos = self.find_hero_initial_position(map_file)
 
+        # Инициализация игровых объектов
+        start_time = pygame.time.get_ticks()  # <-- Добавляем start_time
+        clock = pygame.time.Clock()
+        game_map = self.load_map_data(map_file)  # <-- Добавляем game_map
+        player = self  # Player логика реализована в MainScreen  # <-- Добавляем player
+
         if self.saved_hero_pos:
             hero_pos = self.saved_hero_pos
             self.saved_hero_pos = None
@@ -1308,7 +1479,10 @@ class MainScreen:
 
         flipped_image = False
 
+        running = True
         while running:
+            delta_time = clock.tick(60) / 1000.0  # <-- Добавляем delta_time
+
             current_time = pygame.time.get_ticks()
 
             for event in pygame.event.get():
@@ -1459,6 +1633,19 @@ class MainScreen:
                 self.screen.blit(aim_cursor_image, (mouse_x - 40, mouse_y - 40))
             else:
                 pygame.mouse.set_visible(True)
+
+            for enemy in enemies[:]:
+                if player.attack(enemy):
+                    self.killed_enemies += 1
+                    enemies.remove(enemy)
+
+                    # Проверка на Pudge
+                    if enemy.enemy_type == 2:  # Теперь правильный отступ
+                        total_time = (pygame.time.get_ticks() - start_time) // 1000
+                        self.save_game_result(self.killed_enemies, total_time)
+                        self.show_win_screen()
+                        running = False
+                        break
 
             pygame.display.flip()
 
@@ -1626,6 +1813,8 @@ class Enemy:
                     self.y -= 1
             self.last_move_time = current_time
 
+
+
     def can_move(self, x, y, map_data):
         """Проверяет, может ли враг переместиться на клетку (x, y)."""
         if 0 <= x < len(map_data[0]) and 0 <= y < len(map_data):
@@ -1675,10 +1864,15 @@ class Fireball:
             self.dx = 0
             self.dy = 1 if self.target_y > self.y else -1
 
-    def update(self):
-        """Обновляет позицию огненного шара."""
-        self.x += self.dx * self.speed
-        self.y += self.dy * self.speed
+    def update(self, delta_time, game_map, player):
+        # Новая логика обновления с использованием переданных параметров
+        self.move_towards_hero(player.x, player.y, game_map)
+        return self.check_collision_with_player(player)
+
+    def check_collision_with_player(self, player):
+        # Логика проверки столкновения
+        distance = abs(self.x - player.x) + abs(self.y - player.y)
+        return distance < 1
 
     def collides_with_hero(self, hero_x, hero_y):
         """Проверяет, попал ли огненный шар в героя."""
