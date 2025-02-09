@@ -1257,7 +1257,7 @@ class MainScreen:
             pudge = Enemy(pudge_x, pudge_y, 2, enemy_images[2], 1, 2, 0.5)  # Pudge имеет тип 2
             pudge.health = 20  # Устанавливаем здоровье Pudge
             pudge.attack_damage = 2  # Урон Pudge (2 сердца)
-            pudge.heal_interval = 1000  # Восстановление здоровья каждую секунду (1000 мс)
+            pudge.heal_interval = 10000  # Восстановление здоровья каждую секунду (1000 мс)
             enemies.append(pudge)
         camera = Camera(self.width, self.height)
 
