@@ -612,7 +612,7 @@ class MainScreen:
 
         font = pygame.font.SysFont(None, 36)
         padding = 20  # Отступы внутри рамки
-        frame_width = 600  # Увеличиваем ширину рамки до 600 пикселей
+        frame_width = 500  # Увеличиваем ширину рамки
         frame_height = 300
         frame_rect = pygame.Rect(self.width // 2 - frame_width // 2, self.height // 2 - frame_height // 2, frame_width,
                                  frame_height)
@@ -837,6 +837,9 @@ class MainScreen:
             pygame.display.flip()
 
     def choose_character(self):
+        # Сбрасываем счетчик убийств монстров при начале новой игры
+        self.killed_enemies = 0
+
         selected_character = None
         confirm_button_pressed = False
 
