@@ -386,7 +386,9 @@ class MainScreen:
         y = 80
         for i, result in enumerate(self.game_results[:10]):
             color = place_colors.get(i, (150, 150, 150))
-            time_str = f"{result['time'] // 60:02}мин {result['time'] % 60:02}сек"  # Новый формат
+            minutes = result['time'] // 60
+            seconds = result['time'] % 60
+            time_str = f"{minutes:02}:{seconds:02}"
             text = f"{i + 1}. {result['player'][:15]:<15} Уб: {result['kills']:2} Вр: {time_str}"
             text_surf = small_font.render(text, True, color)
             rating_surface.blit(text_surf, (20, y))
