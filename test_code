@@ -167,7 +167,7 @@ def create_cursor(cursor_image):
 class MainScreen:
     def __init__(self, width, height):
         self.killed_enemies = 0  # Счетчик убитых монстров
-        self.total_enemies = 10  # Общее количество монстров на уровне
+        self.total_enemies = 1  # Общее количество монстров на уровне
         self.volume_slider_rect = None
         self.settings_buttons = None
         self.aim_cursor_rect = None
@@ -204,6 +204,7 @@ class MainScreen:
         self.load_game_results()
 
 
+        # Initialize player health attributes
         self.player_health = 10  # Default value, can be changed later
         self.player_max_health = 10  # Default value, can be changed later
 
@@ -591,15 +592,13 @@ class MainScreen:
                         self.show_instructions()  # Показать инструкции
 
     def generate_stars(self, num_stars):
-        """Генерирует звезды для фона."""
         for _ in range(num_stars):
-            x = random.randint(0, self.width)  # Случайная позиция по X
-            y = random.randint(0, self.height)  # Случайная позиция по Y
-            size = random.randint(1, 3)  # Случайный размер звезды
-            self.stars.append([x, y, size])  # Добавляем звезду в список
+            x = random.randint(0, self.width)
+            y = random.randint(0, self.height)
+            size = random.randint(1, 3)
+            self.stars.append([x, y, size])
 
     def show_instructions(self):
-        """Отображает инструкции по управлению в игре."""
         instructions = [
             "Инструкция:",
             "1. Используйте W, A, S, D для перемещения.",
@@ -609,43 +608,42 @@ class MainScreen:
             "5. Нажмите ESC для выхода в меню."
         ]
 
-        font = pygame.font.SysFont(None, 36)  # Шрифт для текста инструкций
+        font = pygame.font.SysFont(None, 36)
         padding = 20  # Отступы внутри рамки
-        frame_width = 500  # Ширина рамки
-        frame_height = 300  # Высота рамки
-        # Прямоугольник для рамки инструкций
+        frame_width = 500  # Увеличиваем ширину рамки
+        frame_height = 300
         frame_rect = pygame.Rect(self.width // 2 - frame_width // 2, self.height // 2 - frame_height // 2, frame_width,
                                  frame_height)
 
-        # Отрисовка серой рамки с закругленными углами
+        # Отрисовка серой рамки
         pygame.draw.rect(self.screen, GRAY, frame_rect, border_radius=10)
 
-        # Отрисовка текста инструкций
+        # Отрисовка текста инструкции с учетом отступов
         for i, line in enumerate(instructions):
             text_surface = font.render(line, True, WHITE)
             text_rect = text_surface.get_rect(topleft=(frame_rect.left + padding, frame_rect.top + padding + i * 40))
             self.screen.blit(text_surface, text_rect)
 
-        # Отрисовка крестика для закрытия инструкций
+        # Отрисовка крестика в правом верхнем углу
         close_button_rect = pygame.Rect(frame_rect.right - 30, frame_rect.top + 10, 20, 20)
         pygame.draw.rect(self.screen, RED, close_button_rect)
         close_button_text = font.render("X", True, WHITE)
         close_button_text_rect = close_button_text.get_rect(center=close_button_rect.center)
         self.screen.blit(close_button_text, close_button_text_rect)
 
-        pygame.display.flip()  # Обновляем экран
+        pygame.display.flip()
 
-        # Ожидание закрытия инструкций
+        # Обработка событий
         waiting = True
         while waiting:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:  # Выход из игры
+                if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                if event.type == pygame.MOUSEBUTTONDOWN:  # Нажатие на крестик
+                if event.type == pygame.MOUSEBUTTONDOWN:
                     if close_button_rect.collidepoint(event.pos):
                         waiting = False
-                if event.type == pygame.KEYDOWN:  # Нажатие любой клавиши
+                if event.type == pygame.KEYDOWN:
                     waiting = False
 
     def draw(self):
@@ -787,52 +785,52 @@ class MainScreen:
 
     # Функция для отображения меню выхода из игры
     def show_exit_menu(self):
-        # Настройка шрифтов для элементов интерфейса
-        font_title = pygame.font.SysFont(GAME_FONT, 100)  # Шрифт для заголовка
-        font_button = pygame.font.SysFont(GAME_FONT, 72)  # Шрифт для кнопок
-
-        # Параметры и расположение кнопок
+        font_title = pygame.font.SysFont(GAME_FONT, 100)
+        font_button = pygame.font.SysFont(GAME_FONT, 72)
         button_width = 300
         button_height = 120
-        button_spacing = 80  # Расстояние между кнопками
+        button_spacing = 80
 
-        # Создание прямоугольных областей для кнопок
         button1_rect = pygame.Rect((self.width - button_width) // 2,
-                                   (self.height // 2) - button_height - button_spacing // 2,
-                                   button_width, button_height)
-        button2_rect = pygame.Rect((self.width - button_width) // 2,
-                                   (self.height // 2) + button_spacing // 2,
+                                   (self.height // 2) - button_height - button_spacing // 2, button_width,
+                                   button_height)
+        button2_rect = pygame.Rect((self.width - button_width) // 2, (self.height // 2) + button_spacing // 2,
                                    button_width, button_height)
 
         exit_menu = True
         while exit_menu:
-            # Обработка событий в меню
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:  # Закрытие окна
+                if event.type == pygame.QUIT:
                     pygame.quit()
                     quit()
-                if event.type == pygame.MOUSEBUTTONDOWN:  # Клики по кнопкам
+                if event.type == pygame.MOUSEBUTTONDOWN:
                     if button1_rect.collidepoint(event.pos):
-                        self.play_click_sound()  # Воспроизведение звука клика
+                        if self.click_sound:  # Проверяем, загружен ли звук
+                            self.click_sound.play()  # Воспроизводим звук
                         pygame.quit()
                         quit()
                     if button2_rect.collidepoint(event.pos):
-                        self.play_click_sound()
-                        exit_menu = False  # Закрытие меню выхода
+                        if self.click_sound:  # Проверяем, загружен ли звук
+                            self.click_sound.play()  # Воспроизводим звук
+                        exit_menu = False
 
-            # Отрисовка фона с анимированными звездами
             self.screen.fill(BLACK)
             for star in self.stars:
                 pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
-            # Отрисовка заголовка
             title_text = font_title.render("Выйти из игры?", True, WHITE)
             title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))
             self.screen.blit(title_text, title_rect)
 
-            # Отрисовка кнопок с текстом
-            self.draw_button(button1_rect, "Выйти", font_button)
-            self.draw_button(button2_rect, "Остаться", font_button)
+            pygame.draw.rect(self.screen, (80, 80, 200), button1_rect)
+            button1_text = font_button.render("Выйти", True, WHITE)
+            button1_text_rect = button1_text.get_rect(center=button1_rect.center)
+            self.screen.blit(button1_text, button1_text_rect)
+
+            pygame.draw.rect(self.screen, (80, 80, 200), button2_rect)
+            button2_text = font_button.render("Остаться", True, WHITE)
+            button2_text_rect = button2_text.get_rect(center=button2_rect.center)
+            self.screen.blit(button2_text, button2_text_rect)
 
             pygame.display.flip()
 
@@ -840,9 +838,8 @@ class MainScreen:
         selected_character = None
         confirm_button_pressed = False
 
-        # Основной цикл выбора персонажа
         while not confirm_button_pressed:
-            confirm_button_rect = self.draw_choose_character_screen()  # Отрисовка экрана выбора
+            confirm_button_rect = self.draw_choose_character_screen()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -850,52 +847,84 @@ class MainScreen:
                     sys.exit()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    # Проверка нажатия кнопки подтверждения
-                    if confirm_button_rect.collidepoint(event.pos) and selected_character:
+                    if confirm_button_rect.collidepoint(event.pos) and selected_character is not None:
                         confirm_button_pressed = True
 
-                    # Выбор персонажа при клике
                     for i, char in enumerate(characters):
-                        if char.rect and char.rect.collidepoint(event.pos):
+                        if self.character_images[i] and char.rect and char.rect.collidepoint(event.pos):
                             selected_character = char
-                            char.highlighted = True  # Подсветка выбранного
-                            # Сброс подсветки для остальных
+                            char.highlighted = True
                             for other_char in characters:
                                 if other_char != char:
                                     other_char.highlighted = False
-                            # Настройка параметров в зависимости от персонажа
-                            self.set_character_stats(char)
+                            if selected_character.name == "Немецкий медик":
+                                self.ammo = 5
+                            elif selected_character.name == "Военный Нигерии":
+                                self.ammo = 0
+                                self.player_max_health = 12
+                                self.player_health = 12
+                            else:
+                                self.ammo = 10
 
-            # После подтверждения - запрос имени и показ вступления
             if confirm_button_pressed and selected_character:
-                self.handle_character_confirmation(selected_character)
+                self.player_name = input_box(self.screen, "Введите имя персонажа:", self.width, self.height, self.stars)
+                self.selected_character = selected_character
+                self.show_character_intro(selected_character)
                 return selected_character
 
     def draw_choose_character_screen(self):
-        # Отрисовка фона с звездами
         self.screen.fill(BLACK)
         for star in self.stars:
             pygame.draw.circle(self.screen, WHITE, (star[0], star[1]), star[2])
 
-        # Расчет позиций для изображений персонажей
         if self.character_images:
-            # Поиск базового размера для масштабирования
-            base_height = self.get_base_character_height()
-            total_width = self.calculate_total_width(base_height)
-            x_offset = max(0, (self.width - total_width) // 2)  # Центрирование
+            try:
+                russian_soldier_index = characters.index(
+                    next(char for char in characters if char.name == "Русский военный"))
+                russian_soldier_image = self.character_images[russian_soldier_index]
+            except (StopIteration, ValueError, IndexError):
+                print("Error: 'Русский военный' not found or images not loaded properly.")
+                return
 
-            # Отрисовка всех доступных персонажей
+            spacing = 25
+            total_width = sum(img.get_width() for img in self.character_images) + (len(characters) - 1) * spacing
+            x_offset = max(0, (self.width - total_width) // 2)
+
             for i, char in enumerate(characters):
                 if self.character_images[i]:
-                    # Масштабирование изображения
-                    scaled_image = self.scale_character_image(i, base_height)
-                    # Позиционирование
-                    char.rect = self.position_character(i, x_offset, base_height, scaled_image)
-                    # Отрисовка с подсветкой если выбрано
-                    self.screen.blit(scaled_image if char.highlighted else scaled_image, char.rect)
+                    try:
+                        russian_soldier_index = characters.index(
+                            next(c for c in characters if c.name == "Русский военный"))
+                        base_height = self.character_images[russian_soldier_index].get_height()
+                    except (StopIteration, ValueError, IndexError):
+                        print("Error: 'Русский военный' not found or images not loaded properly.")
+                        return
 
-            # Создание и отрисовка кнопки подтверждения
-            confirm_button_rect = self.draw_confirm_button()
+                    target_height = base_height
+                    aspect_ratio = self.character_images[i].get_width() / self.character_images[i].get_height()
+                    new_width = int(target_height * aspect_ratio)
+
+                    scaled_image = pygame.transform.scale(self.character_images[i], (new_width, target_height))
+                    scaled_bright_image = pygame.transform.scale(characters[i].bright_image, (new_width, target_height))
+
+                    x_pos = x_offset + sum(img.get_width() for img in self.character_images[:i]) + i * spacing
+                    char.rect = pygame.Rect(x_pos, (self.height - target_height) // 2, new_width, target_height)
+                    self.screen.blit(scaled_bright_image if char.highlighted else scaled_image, char.rect)
+
+            # Создаем кнопку "Подтвердить"
+            button_width = 300
+            button_height = 80
+            button_x = (self.width - button_width) // 2
+            button_y = self.height - 150  # Располагаем кнопку внизу экрана
+            confirm_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+
+            # Рисуем кнопку
+            pygame.draw.rect(self.screen, (80, 80, 200), confirm_button_rect, border_radius=20)
+            font = pygame.font.SysFont(None, 48)
+            text = font.render("Подтвердить", True, WHITE)
+            text_rect = text.get_rect(center=confirm_button_rect.center)
+            self.screen.blit(text, text_rect)
+
             pygame.display.flip()
             return confirm_button_rect
 
@@ -958,6 +987,7 @@ class MainScreen:
         self.show_shooting_range()
 
     def show_shooting_range(self):
+        """Displays the shooting range game screen without shooting animation."""
         pygame.mouse.set_visible(True)
         self.saved_game_state = "shooting_range"
         try:
@@ -983,6 +1013,7 @@ class MainScreen:
             self.sword_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "sword.wav"))  # Звук удара мечом
             self.sword_sound.set_volume(0.5)
 
+            # Load character-specific image
             character_image_name = {
                 "Немецкий медик": "medic_common.png",  # Используем medic_common для Немецкого медика
                 "Военный Нигерии": "niger_common.png",
@@ -995,6 +1026,7 @@ class MainScreen:
             test_image = pygame.image.load(os.path.join(data_dir, character_image_name)).convert_alpha()
             test_image = pygame.transform.scale(test_image, (test_image.get_width() // 2, test_image.get_height() // 2))
 
+            # Initialize test_y AFTER loading test_image
             test_y = self.height - test_image.get_height() - 28
 
             self.aim_cursor, self.aim_cursor_rect = create_cursor(aim_cursor_image)
@@ -1003,8 +1035,9 @@ class MainScreen:
 
         except (pygame.error, ValueError, FileNotFoundError) as e:
             print(f"Error loading resources: {e}")
-            return
+            return  # Return to prevent further execution if loading fails
 
+        # Game variables
         test_x = self.test_x
         test_speed = 3
         flipped_image = self.flipped_image
@@ -1021,8 +1054,9 @@ class MainScreen:
         melee_attack_start_time = 0  # Время начала атаки
         bullet_data = []  # Список для хранения данных о пулях: (x, y, время появления)
 
+        # Main game loop
         running = True
-        start_time = pygame.time.get_ticks()
+        start_time = pygame.time.get_ticks()  # Record start time
         while running:
             current_time = pygame.time.get_ticks()  # Текущее время
             mouse_x, mouse_y = pygame.mouse.get_pos()  # Получаем текущие координаты курсора
@@ -1072,6 +1106,7 @@ class MainScreen:
                     ammo = 5 if self.selected_character.name == "Немецкий медик" else 10  # Восстанавливаем пули в зависимости от персонажа
                     reloading = False
 
+            # Character movement handling
             if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_a]:
                 if not walk_sound_playing and self.walk_sound:
                     self.walk_sound.play(-1)
@@ -1094,6 +1129,7 @@ class MainScreen:
             bullet_data = [(x, y, spawn_time) for (x, y, spawn_time) in bullet_data if
                            current_time - spawn_time <= 3000]
 
+            # Drawing
             self.screen.fill(BLACK)
             if shooting_range_image:
                 self.screen.blit(shooting_range_image, (0, 0))
@@ -1136,9 +1172,9 @@ class MainScreen:
 
             pygame.display.flip()
             elapsed_time = current_time - start_time
-            if elapsed_time >= 15000:
+            if elapsed_time >= 5000:  # Check if 20 seconds have passed
                 self.show_manga()
-                running = False
+                running = False  # Exit the loop after showing manga
 
         # Восстанавливаем стандартный курсор мыши при выходе из игры
         pygame.mouse.set_visible(True)
@@ -1166,9 +1202,9 @@ class MainScreen:
                     sys.exit()
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                     current_image_index += 1
-                    if current_image_index >= len(manga_images):
-                        current_image_index = 0
-                        running = False
+                    if current_image_index >= len(manga_images):  # Check boundary condition
+                        current_image_index = 0  # Loop back to the beginning
+                        running = False  # Exit the loop after all images are displayed
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
 
@@ -1180,7 +1216,7 @@ class MainScreen:
                 pygame.display.flip()
             except pygame.error as e:
                 print(f"Error loading manga image: {e}")
-                running = False
+                running = False  # Exit if an image can't be loaded
 
         self.show_game_map(self.selected_character)
 
@@ -1545,7 +1581,7 @@ class MainScreen:
                 enemy_type = 1
                 x, y = self.get_random_spawn_position(enemies, hero_pos, map_file)
                 enemies.append(
-                    Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5, self))
+                    Enemy(x, y, enemy_type, enemy_images[enemy_type], enemy_type, enemy_type, 0.5, self))  # Исправлено
                 last_enemy_spawn_time = current_time
 
                 # Создание Pudge для уровня pole2.txt
