@@ -1,45 +1,36 @@
-import pygame
-import random
-import os
-import sys
-import time
+# Импортируем необходимые библиотеки
+import pygame  # Основная библиотека для создания игр
+import random  # Для генерации случайных чисел
+import os  # Для работы с файловой системой
+import sys  # Для управления системными функциями
+import time  # Для работы со временем
 
-
-
+# Класс Character: описывает персонажа игры
 class Character:
     def __init__(self, name, image_name, bright_image_name, speed):
-        # name: Имя персонажа (строка).
-        self.name = name
-        # image_name: Имя файла с изображением персонажа (строка).
-        self.image_name = image_name
-        # bright_image_name: Имя файла с подсвеченным изображением персонажа (строка).
-        self.bright_image_name = bright_image_name
-        # speed: Скорость передвижения персонажа (число).
-        self.speed = speed
-        # image: Поверхность Pygame с изображением персонажа. Инициализируется в load_images().
-        self.image = None
-        # bright_image: Поверхность Pygame с подсвеченным изображением персонажа. Инициализируется в load_images().
-        self.bright_image = None
-        # rect: Прямоугольник, представляющий область, занимаемую изображением персонажа. Инициализируется в
-        # load_images().
-        self.rect = None
-        # highlighted: Флаг, указывающий, выделен ли персонаж.
-        self.highlighted = False
+        # Инициализация атрибутов персонажа
+        self.name = name  # Имя персонажа
+        self.image_name = image_name  # Имя файла с изображением персонажа
+        self.bright_image_name = bright_image_name  # Имя файла с подсвеченным изображением
+        self.speed = speed  # Скорость передвижения персонажа
+        self.image = None  # Изображение персонажа (загружается позже)
+        self.bright_image = None  # Подсвеченное изображение (загружается позже)
+        self.rect = None  # Прямоугольник, описывающий область изображения
+        self.highlighted = False  # Флаг, указывающий, выделен ли персонаж
 
-
-# Создание списка персонажей:
-# Список объектов класса Character, представляющих доступных для выбора персонажей.
+# Создаем список персонажей
 characters = [
     Character("Немецкий медик", "german_medic.png", "german_medic_bright.png", 5),
     Character("Военный Нигерии", "nigerian_soldier.png", "nigerian_soldier_bright.png", 2),
     Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
 ]
 
-
+# Класс Camera: управляет камерой, которая следует за героем
 class Camera:
     def __init__(self, width, height):
-        self.dx = 0
-        self.dy = 0
+        # Инициализация камеры
+        self.dx = 0  # Смещение по оси X
+        self.dy = 0  # Смещение по оси Y
         self.width = width  # Ширина экрана
         self.height = height  # Высота экрана
 
@@ -49,37 +40,32 @@ class Camera:
         self.dx = self.width // 2 - (hero_pos[0] * cell_size + cell_size // 2)
         self.dy = self.height // 2 - (hero_pos[1] * cell_size + cell_size // 2)
 
-
+# Класс Hero: описывает героя игры
 class Hero(pygame.sprite.Sprite):
     def __init__(self, image, pos):
-        super().__init__()  # Инициализируем Sprite
-        self.image = image
-        self.rect = self.image.get_rect(topleft=pos)
-
+        super().__init__()  # Инициализация родительского класса Sprite
+        self.image = image  # Изображение героя
+        self.rect = self.image.get_rect(topleft=pos)  # Прямоугольник, описывающий область героя
 
 # Инициализация Pygame
 def initialize_pygame():
-    pygame.init()
-    pygame.mixer.init()
-
+    pygame.init()  # Инициализация Pygame
+    pygame.mixer.init()  # Инициализация звуковой системы
 
 # Определение констант
 def define_constants():
     global FPS, WHITE, BLACK, GRAY, YELLOW, RED, data_dir, sounds_dir, GAME_FONT
-    FPS = 60
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    GRAY = (50, 50, 50)
-    YELLOW = (255, 255, 0)
-    RED = (255, 0, 0)
-    data_dir = os.path.join(os.path.dirname(__file__), "data")
-    sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
-    GAME_FONT = "comicsansms"
+    FPS = 60  # Количество кадров в секунду
+    WHITE = (255, 255, 255)  # Белый цвет
+    BLACK = (0, 0, 0)  # Черный цвет
+    GRAY = (50, 50, 50)  # Серый цвет
+    YELLOW = (255, 255, 0)  # Желтый цвет
+    RED = (255, 0, 0)  # Красный цвет
+    data_dir = os.path.join(os.path.dirname(__file__), "data")  # Путь к папке с данными
+    sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")  # Путь к папке со звуками
+    GAME_FONT = "comicsansms"  # Шрифт игры
 
-
-# Класс Character
-
-# Создание списка персонажей
+# Функция для создания списка персонажей
 def create_characters():
     return [
         Character("Немецкий медик", "german_medic.png", "german_medic_bright.png", 5),
@@ -87,8 +73,7 @@ def create_characters():
         Character("Русский военный", "russian_soldier.png", "russian_soldier_bright.png", 3),
     ]
 
-
-# Функция для отрисовки текста
+# Функция для отрисовки текста с эффектом пикселизации
 def draw_pixel_text(surface, text, font_size, x, y, color, font):
     font = pygame.font.SysFont(font, font_size)
     text_surface = font.render(text, True, color)
@@ -97,7 +82,6 @@ def draw_pixel_text(surface, text, font_size, x, y, color, font):
                                              (text_surface.get_width() * 2, text_surface.get_height() * 2))
     blurred_surface = pygame.transform.scale(blurred_surface, text_surface.get_size())
     surface.blit(blurred_surface, text_rect)
-
 
 # Функция для создания текстового поля ввода
 def input_box(screen, message, width, height, stars):
@@ -135,17 +119,13 @@ def input_box(screen, message, width, height, stars):
         pygame.display.flip()
     return text
 
-
 # Функция для масштабирования изображения
-
 def scale_image(image, scale_factor):
     new_width = int(image.get_width() * scale_factor)
     new_height = int(image.get_height() * scale_factor)
     return pygame.transform.scale(image, (new_width, new_height))
 
-
 # Функция для создания курсора
-
 def create_cursor(cursor_image):
     try:
         if cursor_image is None:
@@ -160,65 +140,64 @@ def create_cursor(cursor_image):
         print(f"An unexpected error occurred in create_cursor: {e}")
         return None, None
 
-
-# Класс MainScreen
-
-
+# Класс MainScreen: основной экран игры
 class MainScreen:
     def __init__(self, width, height):
-        self.killed_enemies = 0  # Счетчик убитых монстров
-        self.total_enemies = 1  # Общее количество монстров на уровне
-        self.volume_slider_rect = None
-        self.settings_buttons = None
-        self.aim_cursor_rect = None
-        self.aim_cursor = None
-        self.shot_sound = None
-        self.reload_sound = None
-        self.walk_sound = None
-        self.click_sound = None
-        self.character_images = None
-        self.width = width
-        self.height = height
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        self.stars = []
-        self.generate_stars(200)
-        self.load_images()
-        self.load_sounds()
-        self.player_name = ""
-        self.selected_character = None
-        self.font = pygame.font.SysFont(None, 64)
-        self.buttons = []
-        self.volume = 0.5
-        self.menu_opened_from_shooting_range = False
-        self.previous_test_x = 0
-        self.previous_test_y = 0
-        self.previous_flipped_image = False
-        self.test_x = 0
-        self.test_y = 0
-        self.flipped_image = False
-        self.ammo = 0
-        self.camera = Camera(self.width, self.height)  # Создаем камеру
-        self.saved_hero_pos = None  # Сохраняем позицию героя
-        self.saved_game_state = None  # Сохраняем состояние игры
-        self.game_results = []
-        self.load_game_results()
+        # Инициализация атрибутов главного экрана
+        self.killed_enemies = 0  # Счетчик убитых врагов
+        self.total_enemies = 1  # Общее количество врагов на уровне
+        self.volume_slider_rect = None  # Прямоугольник для слайдера громкости
+        self.settings_buttons = None  # Кнопки настроек
+        self.aim_cursor_rect = None  # Прямоугольник для курсора прицела
+        self.aim_cursor = None  # Курсор прицела
+        self.shot_sound = None  # Звук выстрела
+        self.reload_sound = None  # Звук перезарядки
+        self.walk_sound = None  # Звук ходьбы
+        self.click_sound = None  # Звук клика
+        self.character_images = None  # Изображения персонажей
+        self.width = width  # Ширина экрана
+        self.height = height  # Высота экрана
+        self.screen = pygame.display.set_mode((self.width, self.height))  # Создание окна игры
+        self.stars = []  # Список звезд для фона
+        self.generate_stars(200)  # Генерация звезд
+        self.load_images()  # Загрузка изображений
+        self.load_sounds()  # Загрузка звуков
+        self.player_name = ""  # Имя игрока
+        self.selected_character = None  # Выбранный персонаж
+        self.font = pygame.font.SysFont(None, 64)  # Шрифт для текста
+        self.buttons = []  # Список кнопок
+        self.volume = 0.5  # Громкость звука
+        self.menu_opened_from_shooting_range = False  # Флаг открытия меню из стрельбища
+        self.previous_test_x = 0  # Предыдущая позиция X
+        self.previous_test_y = 0  # Предыдущая позиция Y
+        self.previous_flipped_image = False  # Предыдущее состояние отражения изображения
+        self.test_x = 0  # Текущая позиция X
+        self.test_y = 0  # Текущая позиция Y
+        self.flipped_image = False  # Отражение изображения
+        self.ammo = 0  # Количество патронов
+        self.camera = Camera(self.width, self.height)  # Камера
+        self.saved_hero_pos = None  # Сохраненная позиция героя
+        self.saved_game_state = None  # Сохраненное состояние игры
+        self.game_results = []  # Результаты игр
+        self.load_game_results()  # Загрузка результатов игр
 
+        # Инициализация здоровья игрока
+        self.player_health = 10  # Текущее здоровье
+        self.player_max_health = 10  # Максимальное здоровье
 
-        # Initialize player health attributes
-        self.player_health = 10  # Default value, can be changed later
-        self.player_max_health = 10  # Default value, can be changed later
-
+    # Основной цикл игры
     def run(self):
         # Останавливаем звук ходьбы, если он играет
         if self.walk_sound and self.walk_sound.get_num_channels() > 0:
             self.walk_sound.stop()
 
+        # Отображение заголовка игры
         draw_pixel_text(self.screen, "Сквозь Миры", 150, self.width // 2, self.height // 3, YELLOW, font=GAME_FONT)
         pygame.display.flip()
         time.sleep(3)
         self.screen.fill(BLACK)
-        self.show_story()
-        self.show_menu_screen()
+        self.show_story()  # Показ истории
+        self.show_menu_screen()  # Показ главного меню
         running = True
         while running:
             for event in pygame.event.get():
@@ -234,13 +213,14 @@ class MainScreen:
                         self.choose_character()
 
             if self.selected_character:
-                self.show_shooting_range()
+                self.show_shooting_range()  # Показ стрельбища
             self.draw()
             pygame.display.flip()
 
         pygame.quit()
         sys.exit()
 
+    # Отображение экрана победы
     def show_win_screen(self):
         """Отображает окно победы с рейтингом и кнопками"""
         pygame.mouse.set_visible(True)
@@ -314,6 +294,7 @@ class MainScreen:
                     # Отрисовываем стандартный курсор
                     pygame.draw.circle(self.screen, WHITE, pos, 3)
 
+    # Сохранение результатов игры
     def save_game_result(self, kills, time_seconds):
         """Сохраняет результат игры в TXT файл"""
         result = f"{self.player_name}\t{kills}\t{time_seconds}\t{time.time()}\n"
@@ -340,6 +321,7 @@ class MainScreen:
         except Exception as e:
             print(f"Error saving results: {e}")
 
+    # Загрузка результатов игры
     def load_game_results(self):
         """Загружает результаты из файла"""
         self.game_results = []
@@ -362,6 +344,7 @@ class MainScreen:
         except Exception as e:
             print(f"Error loading results: {e}")
 
+    # Отображение таблицы рейтинга
     def show_rating(self):
         """Отображает таблицу рейтинга"""
         rating_font = pygame.font.SysFont(GAME_FONT, 48)
@@ -412,6 +395,7 @@ class MainScreen:
                 if event.type in (pygame.QUIT, pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN):
                     running = False
 
+    # Отображение сообщения
     def show_message(self, message):
         """Отображает сообщение в центре экрана и ставит игру на паузу."""
         font = pygame.font.SysFont(None, 48)
@@ -449,6 +433,7 @@ class MainScreen:
                     if close_button_rect.collidepoint(event.pos):
                         waiting = False
 
+    # Отображение экрана смерти
     def show_death_screen(self):
         """Отображает экран смерти с картинкой и кнопками"""
         # Загрузка изображения смерти
@@ -526,6 +511,7 @@ class MainScreen:
                         running = False
                         self.show_menu_screen()
 
+    # Отрисовка главного меню
     def draw_menu_screen(self):
         global exclamation_button_rect
         self.screen.fill(BLACK)
@@ -593,6 +579,7 @@ class MainScreen:
                     if exclamation_button_rect.collidepoint(event.pos):
                         self.show_instructions()  # Показать инструкции
 
+    # Генерация звезд для фона
     def generate_stars(self, num_stars):
         for _ in range(num_stars):
             x = random.randint(0, self.width)
@@ -600,6 +587,7 @@ class MainScreen:
             size = random.randint(1, 3)
             self.stars.append([x, y, size])
 
+    # Отображение инструкций
     def show_instructions(self):
         instructions = [
             "Инструкция:",
@@ -647,6 +635,7 @@ class MainScreen:
                 if event.type == pygame.KEYDOWN:
                     waiting = False
 
+    # Отрисовка основного экрана
     def draw(self):
         self.screen.fill(BLACK)
         for star in self.stars:
@@ -657,6 +646,7 @@ class MainScreen:
                             f"Выбран персонаж: {self.selected_character.name}, Имя: {self.player_name}",
                             48, self.width // 2, self.height // 2 + 100, WHITE, font=GAME_FONT)
 
+    # Загрузка изображений персонажей
     def load_images(self):
         self.character_images = []
         for char_data in characters:
@@ -678,6 +668,7 @@ class MainScreen:
             except pygame.error as e:
                 print(f"Error loading images for {char_data.name}: {e}. Skipping character.")
 
+    # Загрузка звуков
     def load_sounds(self):
         try:
             self.click_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "button_click.wav"))
@@ -693,6 +684,7 @@ class MainScreen:
             self.sword_sound = None
             self.bite_sound = None
 
+    # Отображение истории игры
     def show_story(self):
         story_text = [
             "В далеком будущем...",
@@ -744,6 +736,7 @@ class MainScreen:
             pygame.display.flip()
             clock.tick(30)
 
+    # Отображение главного меню
     def show_menu_screen(self):
         # Восстановление видимости курсора
         pygame.mouse.set_visible(True)
@@ -787,7 +780,7 @@ class MainScreen:
                             elif i == 2:  # Обработка кнопки "Рейтинг"
                                 self.show_rating()
 
-    # Функция для отображения меню выхода из игры
+    # Отображение меню выхода из игры
     def show_exit_menu(self):
         font_title = pygame.font.SysFont(GAME_FONT, 100)
         font_button = pygame.font.SysFont(GAME_FONT, 72)
@@ -838,6 +831,7 @@ class MainScreen:
 
             pygame.display.flip()
 
+    # Выбор персонажа
     def choose_character(self):
         # Сбрасываем счетчик убийств монстров при начале новой игры
         self.killed_enemies = 0
@@ -879,6 +873,7 @@ class MainScreen:
                 self.show_character_intro(selected_character)
                 return selected_character
 
+    # Отрисовка экрана выбора персонажа
     def draw_choose_character_screen(self):
         self.screen.fill(BLACK)
         for star in self.stars:
@@ -935,6 +930,7 @@ class MainScreen:
             pygame.display.flip()
             return confirm_button_rect
 
+    # Отображение вступительного текста для выбранного персонажа
     def show_character_intro(self, selected_character):
         intro_texts = {
             "Немецкий медик": [
@@ -993,12 +989,13 @@ class MainScreen:
         self.screen.fill(BLACK)
         self.show_shooting_range()
 
+    # Отображение стрельбища
     def show_shooting_range(self):
         """Displays the shooting range game screen without shooting animation."""
         pygame.mouse.set_visible(True)
         self.saved_game_state = "shooting_range"
         try:
-            # Load resources
+            # Загрузка ресурсов
             shooting_range_image = pygame.image.load(os.path.join(data_dir, "poligon.png")).convert()
             shooting_range_image = pygame.transform.scale(shooting_range_image, (self.width, self.height))
             target_image = pygame.image.load(os.path.join(data_dir, "target.png")).convert_alpha()
@@ -1020,7 +1017,7 @@ class MainScreen:
             self.sword_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "sword.wav"))  # Звук удара мечом
             self.sword_sound.set_volume(0.5)
 
-            # Load character-specific image
+            # Загрузка изображения персонажа
             character_image_name = {
                 "Немецкий медик": "medic_common.png",  # Используем medic_common для Немецкого медика
                 "Военный Нигерии": "niger_common.png",
@@ -1033,7 +1030,7 @@ class MainScreen:
             test_image = pygame.image.load(os.path.join(data_dir, character_image_name)).convert_alpha()
             test_image = pygame.transform.scale(test_image, (test_image.get_width() // 2, test_image.get_height() // 2))
 
-            # Initialize test_y AFTER loading test_image
+            # Инициализация test_y ПОСЛЕ загрузки test_image
             test_y = self.height - test_image.get_height() - 28
 
             self.aim_cursor, self.aim_cursor_rect = create_cursor(aim_cursor_image)
@@ -1042,9 +1039,9 @@ class MainScreen:
 
         except (pygame.error, ValueError, FileNotFoundError) as e:
             print(f"Error loading resources: {e}")
-            return  # Return to prevent further execution if loading fails
+            return  # Возвращаемся, если загрузка не удалась
 
-        # Game variables
+        # Игровые переменные
         test_x = self.test_x
         test_speed = 3
         flipped_image = self.flipped_image
@@ -1061,9 +1058,9 @@ class MainScreen:
         melee_attack_start_time = 0  # Время начала атаки
         bullet_data = []  # Список для хранения данных о пулях: (x, y, время появления)
 
-        # Main game loop
+        # Основной игровой цикл
         running = True
-        start_time = pygame.time.get_ticks()  # Record start time
+        start_time = pygame.time.get_ticks()  # Записываем время начала
         while running:
             current_time = pygame.time.get_ticks()  # Текущее время
             mouse_x, mouse_y = pygame.mouse.get_pos()  # Получаем текущие координаты курсора
@@ -1107,13 +1104,13 @@ class MainScreen:
                         # Добавляем позицию выстрела и время появления
                         bullet_data.append((mouse_x, mouse_y, current_time))
 
-            # Reload handling (только для персонажей, которые могут стрелять)
+            # Обработка перезарядки (только для персонажей, которые могут стрелять)
             if reloading and self.selected_character.name != "Военный Нигерии":
                 if current_time - reload_start_time >= 2000:
                     ammo = 5 if self.selected_character.name == "Немецкий медик" else 10  # Восстанавливаем пули в зависимости от персонажа
                     reloading = False
 
-            # Character movement handling
+            # Обработка движения персонажа
             if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_a]:
                 if not walk_sound_playing and self.walk_sound:
                     self.walk_sound.play(-1)
@@ -1136,7 +1133,7 @@ class MainScreen:
             bullet_data = [(x, y, spawn_time) for (x, y, spawn_time) in bullet_data if
                            current_time - spawn_time <= 3000]
 
-            # Drawing
+            # Отрисовка
             self.screen.fill(BLACK)
             if shooting_range_image:
                 self.screen.blit(shooting_range_image, (0, 0))
@@ -1179,9 +1176,9 @@ class MainScreen:
 
             pygame.display.flip()
             elapsed_time = current_time - start_time
-            if elapsed_time >= 5000:  # Check if 20 seconds have passed
+            if elapsed_time >= 5000:  # Проверяем, прошло ли 5 секунд
                 self.show_manga()
-                running = False  # Exit the loop after showing manga
+                running = False  # Выходим из цикла после показа манги
 
         # Восстанавливаем стандартный курсор мыши при выходе из игры
         pygame.mouse.set_visible(True)
@@ -1193,6 +1190,7 @@ class MainScreen:
                 # Принудительная отрисовка курсора
                 pygame.mouse.set_visible(True)
 
+    # Отображение манги
     def show_manga(self):
         # Останавливаем звук ходьбы, если он играет
         if self.walk_sound and self.walk_sound.get_num_channels() > 0:
@@ -1209,9 +1207,9 @@ class MainScreen:
                     sys.exit()
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                     current_image_index += 1
-                    if current_image_index >= len(manga_images):  # Check boundary condition
-                        current_image_index = 0  # Loop back to the beginning
-                        running = False  # Exit the loop after all images are displayed
+                    if current_image_index >= len(manga_images):  # Проверяем границы
+                        current_image_index = 0  # Возвращаемся к началу
+                        running = False  # Выходим из цикла после показа всех изображений
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
 
@@ -1223,10 +1221,11 @@ class MainScreen:
                 pygame.display.flip()
             except pygame.error as e:
                 print(f"Error loading manga image: {e}")
-                running = False  # Exit if an image can't be loaded
+                running = False  # Выходим, если изображение не загружено
 
         self.show_game_map(self.selected_character)
 
+    # Отображение меню настроек
     def show_settings_menu(self):
         running = True
         self.dragging_slider = False
@@ -1299,6 +1298,7 @@ class MainScreen:
                 pygame.draw.rect(self.screen, RED, thumb_rect, border_radius=10)
                 pygame.display.flip()
 
+    # Регулировка громкости
     def adjust_volume(self, event):
         slider_width = self.volume_slider_rect.width
         mouse_x = event.pos[0]
@@ -1306,6 +1306,7 @@ class MainScreen:
         if self.click_sound:
             self.click_sound.set_volume(self.volume)
 
+    # Отрисовка карты
     def draw_map(self, map_file="pole", hero_pos=(0, 0), hero_image=None, camera=None):
         try:
             with open(os.path.join(data_dir, map_file), "r") as f:
@@ -1367,6 +1368,7 @@ class MainScreen:
                         hero_y = self.height // 2 - hero_image.get_height() // 2
                         self.screen.blit(hero_image, (hero_x, hero_y))
 
+    # Загрузка кадров портала
     def load_portal_frames(self):
         portal_frames = []
         frame_count = 3  # Количество кадров в анимации
@@ -1376,6 +1378,7 @@ class MainScreen:
             portal_frames.append(frame)
         return portal_frames
 
+    # Отрисовка счетчика убитых врагов
     def draw_enemy_counter(self):
         font = pygame.font.SysFont(None, 48)  # Шрифт для текста
         counter_text = f"{self.killed_enemies}/{self.total_enemies}"  # Текст счетчика (изменено на 20)
@@ -1383,6 +1386,7 @@ class MainScreen:
         text_rect = text_surface.get_rect(topleft=(20, 20))  # Позиция в левом верхнем углу
         self.screen.blit(text_surface, text_rect)  # Отрисовка текста
 
+    # Отображение игровой карты
     def show_game_map(self, selected_character, map_file="pole"):
         pygame.mouse.set_visible(True)
         start_time = pygame.time.get_ticks()
@@ -1668,6 +1672,7 @@ class MainScreen:
 
             pygame.display.flip()
 
+    # Получение случайной позиции для спавна врага
     def get_random_spawn_position(self, enemies, hero_pos, map_file="pole"):
         """Возвращает случайную позицию для спавна врага, которая не занята."""
         map_data = self.load_map_data(map_file)
@@ -1687,6 +1692,7 @@ class MainScreen:
             if map_data[y][x] == '#' and not self.is_cell_occupied(x, y, enemies, hero_pos):
                 return x, y
 
+    # Загрузка данных карты
     def load_map_data(self, map_file="pole"):
         """Загружает данные карты из файла."""
         try:
@@ -1699,6 +1705,7 @@ class MainScreen:
             print("Error: Map file 'pole' not found.")
             return []
 
+    # Поиск начальной позиции героя на карте
     def find_hero_initial_position(self, map_file="pole"):
         try:
             with open(os.path.join(data_dir, map_file), "r") as f:
@@ -1713,6 +1720,7 @@ class MainScreen:
                     return (col_index, row_index)
         return (0, 0)
 
+    # Перемещение героя
     def move_hero(self, hero_pos, dx, dy, map_file="pole"):
         """Перемещает героя на (dx, dy) клеток, если это возможно."""
         new_x = hero_pos[0] + dx
@@ -1745,6 +1753,7 @@ class MainScreen:
 
         return hero_pos
 
+    # Переход на следующий уровень
     def next_level(self):
         """Переход на следующий уровень."""
         print("Переход на следующий уровень!")
@@ -1758,6 +1767,7 @@ class MainScreen:
         # Загружаем новую карту и обновляем позицию героя
         self.show_game_map(self.selected_character, map_file="pole2.txt")
 
+    # Сохранение данных карты
     def save_map_data(self, map_data, map_file="pole"):
         """Сохраняет данные карты в файл."""
         try:
@@ -1767,6 +1777,7 @@ class MainScreen:
         except Exception as e:
             print(f"Error saving map data: {e}")
 
+    # Проверка, занята ли клетка
     def is_cell_occupied(self, x, y, enemies, hero_pos):
         """Проверяет, занята ли клетка (x, y) врагами или героем."""
         map_data = self.load_map_data()
@@ -1783,24 +1794,25 @@ class MainScreen:
                 return True
         return False
 
-
+# Класс Enemy: описывает врага
 class Enemy:
     def __init__(self, x, y, enemy_type, image, attack_range, attack_interval, speed, main_screen):
-        self.x = x
-        self.y = y
-        self.enemy_type = enemy_type
-        self.image = image
-        self.attack_range = attack_range
-        self.attack_interval = attack_interval
-        self.speed = speed
-        self.last_attack_time = 0
-        self.last_move_time = 0
-        self.health = 3  # По умолчанию 3 HP
-        self.attack_damage = 1  # По умолчанию урон 1
-        self.heal_interval = 0  # По умолчанию восстановление отключено
+        self.x = x  # Позиция X
+        self.y = y  # Позиция Y
+        self.enemy_type = enemy_type  # Тип врага
+        self.image = image  # Изображение врага
+        self.attack_range = attack_range  # Дистанция атаки
+        self.attack_interval = attack_interval  # Интервал атаки
+        self.speed = speed  # Скорость передвижения
+        self.last_attack_time = 0  # Время последней атаки
+        self.last_move_time = 0  # Время последнего движения
+        self.health = 3  # Здоровье врага
+        self.attack_damage = 1  # Урон врага
+        self.heal_interval = 0  # Интервал восстановления здоровья
         self.last_heal_time = 0  # Время последнего восстановления здоровья
-        self.main_screen = main_screen  # Передаем объект MainScreen
+        self.main_screen = main_screen  # Ссылка на главный экран
 
+    # Движение врага к герою
     def move_towards_hero(self, hero_x, hero_y, map_data, enemies, hero_pos, main_screen):
         """Двигается к герою, если это возможно, избегая занятых клеток."""
         current_time = pygame.time.get_ticks()
@@ -1832,12 +1844,14 @@ class Enemy:
                     self.y -= 1
             self.last_move_time = current_time
 
+    # Проверка, может ли враг переместиться на клетку
     def can_move(self, x, y, map_data):
         """Проверяет, может ли враг переместиться на клетку (x, y)."""
         if 0 <= x < len(map_data[0]) and 0 <= y < len(map_data):
             return map_data[y][x] in ('#', '~')  # Разрешаем движение по клеткам '#' и '~'
         return False
 
+    # Атака врага
     def attack(self, hero_x, hero_y, fireballs):
         """Атакует героя, если он в зоне досягаемости."""
         current_time = pygame.time.get_ticks()
@@ -1852,6 +1866,7 @@ class Enemy:
                         self.main_screen.bite_sound.play()
                 self.last_attack_time = current_time
 
+    # Восстановление здоровья врага
     def heal(self):
         """Восстанавливает здоровье каждые heal_interval миллисекунд."""
         if self.heal_interval > 0:  # Если восстановление включено
@@ -1860,8 +1875,7 @@ class Enemy:
                 self.health = min(self.health + 1, 20)  # Восстанавливаем 1 HP, но не больше 20
                 self.last_heal_time = current_time
 
-
-# Основной код
+# Основная функция
 def main():
     pygame.init()  # Инициализация Pygame
     pygame.mixer.init()  # Инициализация звуковой системы
@@ -1872,6 +1886,7 @@ def main():
     pygame.quit()
     sys.exit()
 
-
+# Запуск игры
 if __name__ == "__main__":
     main()
+    
