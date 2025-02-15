@@ -448,7 +448,7 @@ class MainScreen:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if close_button_rect.collidepoint(event.pos):
                         waiting = False
-                        
+
     def show_death_screen(self):
         """Отображает экран смерти с картинкой и кнопками"""
         # Загрузка изображения смерти
@@ -684,11 +684,14 @@ class MainScreen:
             self.click_sound.set_volume(0.2)
             self.sword_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "sword.wav"))  # Звук удара мечом
             self.sword_sound.set_volume(0.5)  # Устанавливаем громкость звука
+            self.bite_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "monstr-est-plot-37065.wav"))  # Звук укуса
+            self.bite_sound.set_volume(0.5)  # Устанавливаем громкость звука
             print("Button click sound loaded successfully.")
         except pygame.error as e:
             print(f"Error loading sound file: {e}")
             self.click_sound = None
             self.sword_sound = None
+            self.bite_sound = None
 
     def show_story(self):
         story_text = [
@@ -1829,8 +1832,6 @@ class Enemy:
                     self.y -= 1
             self.last_move_time = current_time
 
-
-
     def can_move(self, x, y, map_data):
         """Проверяет, может ли враг переместиться на клетку (x, y)."""
         if 0 <= x < len(map_data[0]) and 0 <= y < len(map_data):
@@ -1845,6 +1846,11 @@ class Enemy:
             if distance <= self.attack_range:  # Проверяем радиус атаки
                 if self.enemy_type == 2:  # Pudge
                     self.main_screen.player_health -= self.attack_damage  # Наносим урон (2 сердца)
+                elif self.enemy_type == 1:  # Dragon
+                    self.main_screen.player_health -= self.attack_damage  # Наносим урон (1 сердце)
+                    if self.main_screen.bite_sound:  # Воспроизводим звук укуса
+                        self.main_screen.bite_sound.play()
+                self.last_attack_time = current_time
 
     def heal(self):
         """Восстанавливает здоровье каждые heal_interval миллисекунд."""
