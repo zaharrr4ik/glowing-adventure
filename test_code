@@ -684,7 +684,7 @@ class MainScreen:
             self.click_sound.set_volume(0.2)
             self.sword_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "sword.wav"))  # Звук удара мечом
             self.sword_sound.set_volume(0.5)  # Устанавливаем громкость звука
-            self.bite_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "monstr-est-plot-37065.wav"))  # Звук укуса
+            self.bite_sound = pygame.mixer.Sound(os.path.join(sounds_dir, "kysaet.wav"))  # Звук укуса
             self.bite_sound.set_volume(0.5)  # Устанавливаем громкость звука
             print("Button click sound loaded successfully.")
         except pygame.error as e:
